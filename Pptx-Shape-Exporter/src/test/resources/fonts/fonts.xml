@@ -1,0 +1,26 @@
+<fontFamilies>
+	<fontFamily name="Allianz-Positiv">
+		<normal>fonts/AllianzPositiv/Allianz-Positiv.ttf</normal>
+		<pdfEncoding>Identity-H</pdfEncoding>
+		<pdfEmbedded>true</pdfEmbedded>
+		<exportFonts>
+			<export key="net.sf.jasperreports.pptx">curves</export>
+		</exportFonts>
+	</fontFamily>
+	<fontFamily name="AllianzSans">
+		<normal>fonts/AllianzSans/AllianzSans-Regular.ttf</normal>
+		<bold>fonts/AllianzSans/AllianzSans-Bold.ttf</bold>
+		<italic>fonts/AllianzSans/AllianzSans-Italic.ttf</italic>
+		<boldItalic>fonts/AllianzSans/AllianzSans-BoldItalic.ttf</boldItalic>
+		<pdfEncoding>Identity-H</pdfEncoding>
+		<pdfEmbedded>true</pdfEmbedded>
+		<exportFonts>
+			<export key="net.sf.jasperreports.pptx">curves</export>
+		</exportFonts>
+	</fontFamily>
+	<!-- fontFamily name="Allianz Sans Light">
+		<normal>fonts/AllianzSansLight/AllianzSans-Light.ttf</normal>
+		<pdfEncoding>Identity-H</pdfEncoding>
+		<pdfEmbedded>true</pdfEmbedded>
+	</fontFamily -->
+</fontFamilies>
