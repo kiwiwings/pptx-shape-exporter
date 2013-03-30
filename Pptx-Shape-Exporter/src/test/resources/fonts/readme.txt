@@ -1,0 +1,1 @@
+Used Allianz TrueType fonts aren't meant for public - so they aren't included in the public repository
