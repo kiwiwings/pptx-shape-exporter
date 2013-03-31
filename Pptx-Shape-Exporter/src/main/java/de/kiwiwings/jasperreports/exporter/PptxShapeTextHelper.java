@@ -117,6 +117,7 @@ public abstract class PptxShapeTextHelper {
 	
 	protected void initShape(XSLFShape shape, XSLFAutoShape shapeBox) {
 		this.shape = shape;
+		this.shapeBox = shapeBox;
 	}
 	
 	public XSLFShape getShape() {

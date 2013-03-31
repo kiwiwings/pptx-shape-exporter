@@ -30,7 +30,6 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -44,6 +43,7 @@ import java.util.Map;
 import net.sf.jasperreports.charts.util.DrawChartRenderer;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
+import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRCommonElement;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
@@ -93,21 +93,19 @@ import org.apache.poi.xslf.usermodel.LineDash;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFAutoShape;
 import org.apache.poi.xslf.usermodel.XSLFPictureData;
-import org.apache.poi.xslf.usermodel.XSLFPictureShape;
 import org.apache.poi.xslf.usermodel.XSLFRelation;
 import org.apache.poi.xslf.usermodel.XSLFShape;
 import org.apache.poi.xslf.usermodel.XSLFSheet;
 import org.apache.poi.xslf.usermodel.XSLFSimpleShape;
+import org.apache.poi.xslf.usermodel.XSLFSimpleShapeHelper;
 import org.apache.poi.xslf.usermodel.XSLFSlideMaster;
-import org.apache.xmlbeans.XmlObject;
-import org.openxmlformats.schemas.drawingml.x2006.chartDrawing.CTGroupShape;
+import org.openxmlformats.schemas.drawingml.x2006.main.CTHyperlink;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTRelativeRect;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTTextFont;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTEmbeddedFontDataId;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTEmbeddedFontList;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTEmbeddedFontListEntry;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTPicture;
-import org.openxmlformats.schemas.presentationml.x2006.main.CTShape;
 
 import com.google.typography.font.sfntly.Font;
 import com.google.typography.font.sfntly.FontFactory;
@@ -337,18 +335,40 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		}
 	}
 
-	protected void exportElementAttributes(JRCommonElement jrShape, JRPen jrPen, XSLFSimpleShape xsShape) {
-		if (jrShape.getModeValue() == ModeEnum.OPAQUE && jrShape.getBackcolor() != null) {
+	protected void exportElementAttributes(
+		  XSLFSimpleShape xsShape   // the target shape
+		, JRCommonElement jrShape   // the source shape
+		, JRPen jrPen               // the outline of the shape
+		, JRBoxContainer jrBox      // box around the shape, if applicable
+		, XSLFShape hyperlinkTarget // a shape or group of shape as hyperlink object
+	) {
+		assert(xsShape != null && jrShape != null);
+
+		if ((jrShape.getModeValue() == null || jrShape.getModeValue() == ModeEnum.OPAQUE) && jrShape.getBackcolor() != null) {
 			xsShape.setFillColor(jrShape.getBackcolor());
 		}
-		
-		if (jrPen.getLineWidth() > 0) {
+
+		if (jrPen != null && jrPen.getLineWidth() > 0) {
 			xsShape.setLineWidth(jrPen.getLineWidth());
 			xsShape.setLineColor(jrPen.getLineColor());
 			switch (jrPen.getLineStyleValue()) {
 				case DASHED: xsShape.setLineDash(LineDash.DASH); break;
 				case DOTTED: xsShape.setLineDash(LineDash.DOT); break;
 				default: xsShape.setLineDash(LineDash.SOLID); break;
+			}
+		}
+
+		// TODO: set border to box around the shape
+		
+		if (jrShape instanceof JRPrintHyperlink) {
+			String href = getHyperlinkURL((JRPrintHyperlink)jrShape);
+			if (href != null) {
+				CTHyperlink link = XSLFSimpleShapeHelper.addHyperlink(hyperlinkTarget);
+				if (link != null) {
+			        PackageRelationship rel = slide.getPackagePart()
+		        		.addExternalRelationship(href, XSLFRelation.HYPERLINK.getRelation());
+					link.setId(rel.getId());
+				}
 			}
 		}
 	}
@@ -370,7 +390,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		
 		Line2D myline = new Line2D.Double(x1,y1,x2,y2);
 		XSLFAutoShape xfline = PptxGraphics2D.getShape(myline, slide);
-		exportElementAttributes(line, line.getLinePen(), xfline);
+		exportElementAttributes(xfline, line, line.getLinePen(), null, xfline);
 	}
 
 
@@ -393,7 +413,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			xfrect = PptxGraphics2D.getShape(myrect, slide);
 		}
 
-		exportElementAttributes(rectangle, rectangle.getLinePen(), xfrect);
+		exportElementAttributes(xfrect, rectangle, rectangle.getLinePen(), null, xfrect);
 	}
 
 
@@ -409,7 +429,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		Ellipse2D myoval = new Ellipse2D.Double(x, y, width, height);
 		XSLFAutoShape xfOval = PptxGraphics2D.getShape(myoval, slide);
 
-		exportElementAttributes(ellipse, ellipse.getLinePen(), xfOval);
+		exportElementAttributes(xfOval, ellipse, ellipse.getLinePen(), null, xfOval);
 	}
 	
 	/**
@@ -429,22 +449,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		
 		textHelper.export();
 
-		XSLFShape shape = textHelper.getShape();
-
-		
-		String href = getHyperlinkURL(text);
-		if (href != null) {
-	        PackageRelationship rel = slide.getPackagePart()
-        		.addExternalRelationship(href, XSLFRelation.HYPERLINK.getRelation());
-	        XmlObject xo = shape.getXmlObject();
-	        if (xo instanceof CTShape) {
-		        CTShape ct = (CTShape)xo;
-    	        ct.getNvSpPr().getCNvPr().addNewHlinkClick().setId(rel.getId());
-	        } else if (xo instanceof CTGroupShape) {
-		        CTGroupShape ctg = (CTGroupShape)xo;
-		        ctg.getNvGrpSpPr().getCNvPr().addNewHlinkClick().setId(rel.getId());
-	        }
-		}
+		exportElementAttributes(textHelper.getShapeBox(), text, null, text, textHelper.getShape());
 	}
 
 
@@ -657,10 +662,17 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 
 //			boolean startedHyperlink = startHyperlink(image,false);
 
+		XSLFSimpleShape backgroundShape;
+		XSLFShape hyperlinkShape;
+		
 		if (renderer instanceof DrawChartRenderer) {
 			Rectangle2D rect = new Rectangle2D.Double(image.getX(), image.getY(), image.getWidth(), image.getHeight());
 			PptxGraphics2D grx2 = new PptxGraphics2D(rect, this, slide);
+			// Background color is applied to whole Image
+			backgroundShape = PptxGraphics2D.getShape(rect, slide);
 			renderer.render(jasperReportsContext, grx2, rect);
+			// hyperlinks are only available for visible elements of the chart
+			hyperlinkShape = grx2.getShapeGroup();
 		} else {
 			//	if (image.isLazy())//FIXMEDOCX learn how to link images				
 			Renderable imgRenderer = image.getRenderable();
@@ -688,8 +700,9 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			byte pictureData[] = imgRenderer.getImageData(jasperReportsContext);
 			
 			int idx = ppt.addPicture(pictureData, xsMime);
-			XSLFPictureShape shape = slide.createPicture(idx);
-			CTPicture ct = (CTPicture)shape.getXmlObject();
+			backgroundShape = slide.createPicture(idx);
+			hyperlinkShape = backgroundShape;
+			CTPicture ct = (CTPicture)backgroundShape.getXmlObject();
 
 			if (cropTop != 0 || cropRight != 0 || cropBottom != 0 || cropLeft != 0) {
 				CTRelativeRect rrect = ct.getBlipFill().getStretch().getFillRect();
@@ -699,23 +712,16 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 				rrect.setL((int)cropLeft);
 			}
 			
-			String href = getHyperlinkURL(image);
-			if (href != null) {
-		        PackageRelationship rel = slide.getPackagePart()
-	        		.addExternalRelationship(href, XSLFRelation.HYPERLINK.getRelation());
-				ct.getNvPicPr().getCNvPr().addNewHlinkClick().setId(rel.getId());
-			}
-			
 			Rectangle2D rect = new Rectangle2D.Double(
 				  image.getX() + getOffsetX() + leftPadding
 				, image.getY() + getOffsetY() + topPadding
 				, availableImageWidth
 				, availableImageHeight
 			);
-			shape.setAnchor(rect);
-
-			exportElementAttributes(image, image.getLinePen(), shape);
+			backgroundShape.setAnchor(rect);
 		}
+
+		exportElementAttributes(backgroundShape, image, image.getLinePen(), image, hyperlinkShape);
 	}
 
 
@@ -729,7 +735,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			, frame.getWidth()
 			, frame.getHeight());
 		XSLFAutoShape shape = PptxGraphics2D.getShape(rect, slide);
-		exportElementAttributes(frame, frame.getLineBox().getPen(), shape);
+		exportElementAttributes(shape, frame, frame.getLineBox().getPen(), frame, null);
 
 		setFrameElementsOffset(frame, false);
 

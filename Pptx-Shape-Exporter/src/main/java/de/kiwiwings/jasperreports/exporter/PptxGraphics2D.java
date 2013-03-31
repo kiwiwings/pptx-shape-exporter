@@ -108,10 +108,6 @@ public class PptxGraphics2D extends Graphics2D {
 		this.fontResolver = fontResolver;
 	}
 
-	public XSLFGroupShape getGroup() {
-		return _group;
-	}
-	
 	public void save(Writer writer) {
 		XmlOptions xo = new XmlOptions();
 		Map<String, String> suggestedPrefixes = new HashMap<String, String>();

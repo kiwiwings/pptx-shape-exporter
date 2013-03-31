@@ -10,7 +10,6 @@ import java.util.Map;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 import org.apache.poi.xslf.usermodel.TextAlign;
@@ -41,6 +40,9 @@ public class PptxShapeRunHelper extends PptxShapeTextHelper {
 	) {
 		super(jasperReportsContext, text, styledText, offsetX, offsetY, locale, invalidCharReplacement, fontResolver);
 		textBox = slide.createTextBox();
+		initShape(textBox, textBox);
+		
+		
 		textBox.setAnchor(this.getBounds());
 		textPara = textBox.addNewTextParagraph();
 
@@ -141,10 +143,6 @@ public class PptxShapeRunHelper extends PptxShapeTextHelper {
 			textRun.setStrikethrough(true);
 		} else if (style != null && style.isStrikeThrough() != null && style.isStrikeThrough()) {
 			textRun.setStrikethrough(true);
-		}
-		
-		if (text.getModeValue() == null || text.getModeValue() == ModeEnum.OPAQUE) {
-			textBox.setFillColor(text.getBackcolor());
 		}
 		
 		if (attr.containsKey(TextAttribute.FOREGROUND)) {
