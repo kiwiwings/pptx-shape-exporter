@@ -23,6 +23,7 @@
  */
 package de.kiwiwings.jasperreports.exporter;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.font.TextAttribute;
 import java.awt.geom.Dimension2D;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.AttributedCharacterIterator.Attribute;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -53,6 +55,7 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintEllipse;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
+import net.sf.jasperreports.engine.JRPrintHyperlinkParameter;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
@@ -126,16 +129,18 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
 	public static final String PPTX_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "pptx";
+
+	public static class PptxShapeExportParameter extends JRExporterParameter {
+		protected PptxShapeExportParameter(String name) { super(name); }
+	}
+	
+	public static final JRExporterParameter USE_GLASS_PANE = new PptxShapeExportParameter("use glass pane");
 	
 	protected static final String PPTX_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.pptx.";
 
-	/**
-	 *
-	 */
-	protected static final String JR_PAGE_ANCHOR_PREFIX = "JR_PAGE_ANCHOR_";
-
 	protected XMLSlideShow ppt;
 	protected XSLFSheet slide;
+	protected Map<Integer,XSLFSheet> slideList = new HashMap<Integer,XSLFSheet>();
 	
 	protected JRExportProgressMonitor progressMonitor;
 
@@ -145,6 +150,9 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	protected int elementIndex;
 	protected boolean startPage;
 	protected String invalidCharReplacement;
+
+	/* the "glass pane" is a poor mans protection for chart elements, so users can't simply change chart values */
+	protected boolean useGlassPane = false;
 	
 	
 	/**
@@ -168,10 +176,10 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	 */
 	public void exportReport() throws JRException {
 		progressMonitor = (JRExportProgressMonitor)parameters.get(JRExporterParameter.PROGRESS_MONITOR);
+		useGlassPane = (parameters.containsKey(USE_GLASS_PANE) && (Boolean)parameters.get(USE_GLASS_PANE));
 		setOffset();
 		setExportContext();
 		setHyperlinkProducerFactory();
-		
 		
 		
 		boolean closeStream = false;
@@ -232,30 +240,37 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		for(reportIndex = 0; reportIndex < jasperPrintList.size(); reportIndex++) {
 			setJasperPrint(jasperPrintList.get(reportIndex));
 			setExporterHints();
+			slideList.clear();
 
 			List<JRPrintPage> pages = jasperPrint.getPages();
-			if (pages != null && pages.size() > 0) {
-				if (isModeBatch) {
-					startPageIndex = 0;
-					endPageIndex = pages.size() - 1;
+			if (pages == null || pages.size() == 0) continue;
+			
+			if (isModeBatch) {
+				startPageIndex = 0;
+				endPageIndex = pages.size() - 1;
+			}
+
+			// pre-create pages for hyperlinks between them
+			for (int i=startPageIndex; i <= endPageIndex; i++) {
+				createSlide(null);//FIXMEPPTX
+				slideList.put(i,slide);
+			}
+			
+			
+			JRPrintPage page = null;
+			for(pageIndex = startPageIndex; pageIndex <= endPageIndex; pageIndex++) {
+				if (Thread.interrupted()) {
+					throw new JRException("Current thread interrupted.");
 				}
 
-				JRPrintPage page = null;
-				for(pageIndex = startPageIndex; pageIndex <= endPageIndex; pageIndex++) {
-					if (Thread.interrupted()) {
-						throw new JRException("Current thread interrupted.");
-					}
-
-					page = pages.get(pageIndex);
-
-					createSlide(null);//FIXMEPPTX
-					
-					List<JRPrintElement> list = page.getElements();
-					list = list.subList(nbrBackElem, list.size());
-					page.setElements(list);
-					
-					exportPage(page);
-				}
+				page = pages.get(pageIndex);
+				slide = slideList.get(pageIndex);
+				
+				List<JRPrintElement> list = page.getElements();
+				list = list.subList(nbrBackElem, list.size());
+				page.setElements(list);
+				
+				exportPage(page);
 			}
 		}
 
@@ -268,14 +283,12 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	/**
 	 *
 	 */
-	protected void exportPage(JRPrintPage page) throws JRException
-	{
+	protected void exportPage(JRPrintPage page) throws JRException {
 		frameIndexStack = new ArrayList<Integer>();
 
 		exportElements(page.getElements());
 		
-		if (progressMonitor != null)
-		{
+		if (progressMonitor != null) {
 			progressMonitor.afterPageExport();
 		}
 	}
@@ -289,48 +302,28 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	/**
 	 *
 	 */
-	protected void exportElements(List<JRPrintElement> elements) throws JRException
-	{
-		if (elements != null && elements.size() > 0)
-		{
-			JRPrintElement element;
-			for(int i = 0; i < elements.size(); i++)
-			{
-				elementIndex = i;
-				
-				element = elements.get(i);
-				
-				if (filter == null || filter.isToExport(element))
-				{
-					if (element instanceof JRPrintLine)
-					{
-						exportLine((JRPrintLine)element);
-					}
-					else if (element instanceof JRPrintRectangle)
-					{
-						exportRectangle((JRPrintRectangle)element);
-					}
-					else if (element instanceof JRPrintEllipse)
-					{
-						exportEllipse((JRPrintEllipse)element);
-					}
-					else if (element instanceof JRPrintImage)
-					{
-						exportImage((JRPrintImage)element);
-					}
-					else if (element instanceof JRPrintText)
-					{
-						exportText((JRPrintText)element);
-					}
-					else if (element instanceof JRPrintFrame)
-					{
-						exportFrame((JRPrintFrame)element);
-					}
-					else if (element instanceof JRGenericPrintElement)
-					{
-						exportGenericElement((JRGenericPrintElement) element);
-					}
-				}
+	protected void exportElements(List<JRPrintElement> elements) throws JRException	{
+		if (elements == null) return;
+		elementIndex = -1;
+
+		for (JRPrintElement element : elements) {
+			elementIndex++;
+			if (filter != null && !filter.isToExport(element)) continue;
+
+			if (element instanceof JRPrintLine)	{
+				exportLine((JRPrintLine)element);
+			} else if (element instanceof JRPrintRectangle) {
+				exportRectangle((JRPrintRectangle)element);
+			} else if (element instanceof JRPrintEllipse) {
+				exportEllipse((JRPrintEllipse)element);
+			} else if (element instanceof JRPrintImage) {
+				exportImage((JRPrintImage)element);
+			} else if (element instanceof JRPrintText) {
+				exportText((JRPrintText)element);
+			} else if (element instanceof JRPrintFrame) {
+				exportFrame((JRPrintFrame)element);
+			} else if (element instanceof JRGenericPrintElement) {
+				exportGenericElement((JRGenericPrintElement) element);
 			}
 		}
 	}
@@ -344,6 +337,10 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	) {
 		assert(xsShape != null && jrShape != null);
 
+		if (jrShape.getKey() != null) {
+			XSLFSimpleShapeHelper.setShapeName(xsShape, jrShape.getKey());
+		}
+		
 		if ((jrShape.getModeValue() == null || jrShape.getModeValue() == ModeEnum.OPAQUE) && jrShape.getBackcolor() != null) {
 			xsShape.setFillColor(jrShape.getBackcolor());
 		}
@@ -360,18 +357,90 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 
 		// TODO: set border to box around the shape
 		
-		if (jrShape instanceof JRPrintHyperlink) {
-			String href = getHyperlinkURL((JRPrintHyperlink)jrShape);
+		setHyperlinkURL(jrShape, hyperlinkTarget);
+	}
+
+	protected void setHyperlinkURL(JRCommonElement jrShape, XSLFShape hyperlinkTarget) {
+		if (hyperlinkTarget == null || !(jrShape instanceof JRPrintHyperlink)) return;
+		
+		// http://openxmldeveloper.org/discussions/formats/f/15/t/304.aspx
+		
+		JRPrintHyperlink link = (JRPrintHyperlink)jrShape; 
+		JRHyperlinkProducer customHandler = getHyperlinkProducer(link);
+		PackageRelationship rel = null;
+		String action = null;
+		
+		if (customHandler != null) {
+			String href = customHandler.getHyperlink(link);
 			if (href != null) {
-				CTHyperlink link = XSLFSimpleShapeHelper.addHyperlink(hyperlinkTarget);
-				if (link != null) {
-			        PackageRelationship rel = slide.getPackagePart()
-		        		.addExternalRelationship(href, XSLFRelation.HYPERLINK.getRelation());
-					link.setId(rel.getId());
+				rel = slide.getPackagePart()
+					.addExternalRelationship(href, XSLFRelation.HYPERLINK.getRelation());
+			}
+		}
+		
+		switch(link.getHyperlinkTypeValue()) {
+			case REFERENCE : {
+				String href = link.getHyperlinkReference();
+				if (href != null) {
+					rel = slide.getPackagePart()
+						.addExternalRelationship(href, XSLFRelation.HYPERLINK.getRelation());
+				}
+				break;
+			}
+			case LOCAL_PAGE : {
+				XSLFSheet targetSlide = slideList.get(link.getHyperlinkPage());
+		        rel = slide.getPackagePart()
+	        		.addRelationship(targetSlide.getPackagePart().getPartName()
+    				, TargetMode.INTERNAL, XSLFRelation.SLIDE.getRelation());
+		        action = "ppaction://hlinksldjump";
+				break;
+			}
+			case REMOTE_PAGE : {
+				String href = link.getHyperlinkReference();
+				if (href != null) {
+					rel = slide.getPackagePart()
+						.addExternalRelationship(href, XSLFRelation.HYPERLINK.getRelation());
+				}
+				Integer page = link.getHyperlinkPage();
+				if (page != null) {
+					action = "ppaction://hlinkpres?slideindex="+page;
+					if (link.getHyperlinkParameters() != null) {
+						List<JRPrintHyperlinkParameter> plist = link.getHyperlinkParameters().getParameters();
+						if (plist != null) {
+							for (JRPrintHyperlinkParameter p : plist) {
+								if ("slidetitle".equals(p.getName())) {
+									action += "&slidetitle="+p.getValue().toString();
+									break;
+								}
+							}
+						}
+					}
+				}
+				break;
+			}
+			
+			case NONE :
+			default :
+			case LOCAL_ANCHOR :
+			case REMOTE_ANCHOR :
+				// not implemented ... only pages (not elements) can be referenced in powerpoint
+				break;
+		}
+
+		if (rel != null) {
+			CTHyperlink hlink = XSLFSimpleShapeHelper.addHyperlink(hyperlinkTarget);
+			if (hlink == null) {
+				slide.getPackagePart().removeRelationship(rel.getId());
+			} else {
+				hlink.setId(rel.getId());
+				if (action != null) {
+					hlink.setAction(action);
 				}
 			}
 		}
 	}
+
+
 	
 	
 	/**
@@ -671,6 +740,12 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			// Background color is applied to whole Image
 			backgroundShape = PptxGraphics2D.getShape(rect, slide);
 			renderer.render(jasperReportsContext, grx2, rect);
+
+			if (useGlassPane) {
+				grx2.setPaint(new Color(1f,1f,1f,0.999f));
+				grx2.fillRect(image.getX(), image.getY(), image.getWidth(), image.getHeight());
+			}
+			
 			// hyperlinks are only available for visible elements of the chart
 			hyperlinkShape = grx2.getShapeGroup();
 		} else {
@@ -757,56 +832,6 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			log.debug("No PPTX-Shape generic element handler for " + element.getGenericType());
 		}
 	}
-
-	protected String getHyperlinkURL(JRPrintHyperlink link) {
-		String href = null;
-		JRHyperlinkProducer customHandler = getHyperlinkProducer(link);
-		if (customHandler == null) {
-			switch(link.getHyperlinkTypeValue()) {
-				case REFERENCE :
-					if (link.getHyperlinkReference() != null) {
-						href = link.getHyperlinkReference();
-					}
-					break;
-				case LOCAL_ANCHOR :
-//					if (link.getHyperlinkAnchor() != null)
-//					{
-//						href = "#" + link.getHyperlinkAnchor();
-//					}
-					break;
-				case LOCAL_PAGE :
-//					if (link.getHyperlinkPage() != null)
-//					{
-//						href = "#" + JR_PAGE_ANCHOR_PREFIX + reportIndex + "_" + link.getHyperlinkPage().toString();
-//					}
-					break;
-				case REMOTE_ANCHOR :
-					if (
-						link.getHyperlinkReference() != null &&
-						link.getHyperlinkAnchor() != null
-					) {
-						href = link.getHyperlinkReference() + "#" + link.getHyperlinkAnchor();
-					}
-					break;
-				case REMOTE_PAGE :
-//					if (
-//						link.getHyperlinkReference() != null &&
-//						link.getHyperlinkPage() != null
-//						)
-//					{
-//						href = link.getHyperlinkReference() + "#" + JR_PAGE_ANCHOR_PREFIX + "0_" + link.getHyperlinkPage().toString();
-//					}
-					break;
-				case NONE :
-				default : break;
-			}
-		} else {
-			href = customHandler.getHyperlink(link);
-		}
-
-		return href;
-	}
-
 
 	/**
 	 *

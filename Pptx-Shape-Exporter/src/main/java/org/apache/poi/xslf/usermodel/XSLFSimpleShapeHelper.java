@@ -180,4 +180,8 @@ public class XSLFSimpleShapeHelper extends XSLFSimpleShape {
 		}
 		return null;
 	}
+
+	public static void setShapeName(XSLFSimpleShape shape, String name) {
+		shape.getNvPr().setName(name);
+	}
 }

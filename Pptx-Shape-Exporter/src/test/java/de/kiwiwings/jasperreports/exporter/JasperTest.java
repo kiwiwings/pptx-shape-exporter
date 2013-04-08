@@ -26,7 +26,7 @@ public class JasperTest {
 //		File xlsFile = new File(cl.getResource("npstest.xls").toURI());
 //		File jrxmlFile = new File(cl.getResource("jaspertest.jrxml").toURI());
 		File xlsFile = new File("src/test/resources/npstest.xls");
-		File jrxmlFile = new File("src/test/resources/jaspertest.jrxml");
+		File jrxmlFile = new File("src/test/resources/jaspertest1.jrxml");
 		
 		
 		
@@ -45,6 +45,7 @@ public class JasperTest {
 		JRAbstractExporter exporter = new PptxShapeExporter();
 		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jprint);
 		exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, fos);
+		exporter.setParameter(PptxShapeExporter.USE_GLASS_PANE, Boolean.TRUE);
 		exporter.exportReport();
 		fos.close();
 		
