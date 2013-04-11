@@ -23,7 +23,6 @@
  */
 package de.kiwiwings.jasperreports.exporter;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.font.TextAttribute;
 import java.awt.geom.Dimension2D;
@@ -95,6 +94,7 @@ import org.apache.poi.openxml4j.opc.TargetMode;
 import org.apache.poi.xslf.usermodel.LineDash;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFAutoShape;
+import org.apache.poi.xslf.usermodel.XSLFGroupShape;
 import org.apache.poi.xslf.usermodel.XSLFPictureData;
 import org.apache.poi.xslf.usermodel.XSLFRelation;
 import org.apache.poi.xslf.usermodel.XSLFShape;
@@ -103,6 +103,7 @@ import org.apache.poi.xslf.usermodel.XSLFSimpleShape;
 import org.apache.poi.xslf.usermodel.XSLFSimpleShapeHelper;
 import org.apache.poi.xslf.usermodel.XSLFSlideMaster;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTHyperlink;
+import org.openxmlformats.schemas.drawingml.x2006.main.CTNonVisualDrawingProps;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTRelativeRect;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTTextFont;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTEmbeddedFontDataId;
@@ -114,6 +115,8 @@ import com.google.typography.font.sfntly.Font;
 import com.google.typography.font.sfntly.FontFactory;
 import com.google.typography.font.sfntly.data.WritableFontData;
 import com.google.typography.font.tools.conversion.eot.EOTWriter;
+
+import de.kiwiwings.jasperreports.exporter.customizer.SheetCustomizer;
 
 
 /**
@@ -134,7 +137,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		protected PptxShapeExportParameter(String name) { super(name); }
 	}
 	
-	public static final JRExporterParameter USE_GLASS_PANE = new PptxShapeExportParameter("use glass pane");
+	public static final JRExporterParameter SHEET_CUSTOMIZER = new PptxShapeExportParameter("sheet customizer");
 	
 	protected static final String PPTX_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.pptx.";
 
@@ -151,8 +154,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	protected boolean startPage;
 	protected String invalidCharReplacement;
 
-	/* the "glass pane" is a poor mans protection for chart elements, so users can't simply change chart values */
-	protected boolean useGlassPane = false;
+	protected SheetCustomizer sheetCustomizer[] = {};
 	
 	
 	/**
@@ -176,7 +178,9 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	 */
 	public void exportReport() throws JRException {
 		progressMonitor = (JRExportProgressMonitor)parameters.get(JRExporterParameter.PROGRESS_MONITOR);
-		useGlassPane = (parameters.containsKey(USE_GLASS_PANE) && (Boolean)parameters.get(USE_GLASS_PANE));
+		if (parameters.containsKey(SHEET_CUSTOMIZER)) {
+			sheetCustomizer = (SheetCustomizer[])parameters.get(SHEET_CUSTOMIZER);
+		}
 		setOffset();
 		setExportContext();
 		setHyperlinkProducerFactory();
@@ -271,6 +275,10 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 				page.setElements(list);
 				
 				exportPage(page);
+				
+				for (SheetCustomizer sc : sheetCustomizer) {
+					sc.customize(slide);
+				}
 			}
 		}
 
@@ -741,13 +749,11 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			backgroundShape = PptxGraphics2D.getShape(rect, slide);
 			renderer.render(jasperReportsContext, grx2, rect);
 
-			if (useGlassPane) {
-				grx2.setPaint(new Color(1f,1f,1f,0.999f));
-				grx2.fillRect(image.getX(), image.getY(), image.getWidth(), image.getHeight());
-			}
-			
 			// hyperlinks are only available for visible elements of the chart
-			hyperlinkShape = grx2.getShapeGroup();
+			XSLFGroupShape grp = grx2.getShapeGroup();
+			CTNonVisualDrawingProps cp = grp.getXmlObject().getNvGrpSpPr().getCNvPr();
+			cp.setName(cp.getName().replaceFirst("[^ ]+", "JFreeChart"));
+			hyperlinkShape = grp;
 		} else {
 			//	if (image.isLazy())//FIXMEDOCX learn how to link images				
 			Renderable imgRenderer = image.getRenderable();

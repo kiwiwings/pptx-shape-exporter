@@ -15,6 +15,10 @@ import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
+import de.kiwiwings.jasperreports.exporter.customizer.ChartFakeProtect;
+import de.kiwiwings.jasperreports.exporter.customizer.ChartGlassPane;
+import de.kiwiwings.jasperreports.exporter.customizer.ChartTextLifter;
+import de.kiwiwings.jasperreports.exporter.customizer.SheetCustomizer;
 
 // to find missing classes from ooxml-schemas-1.1
 // run java with jvm parameter -verbose:class
@@ -45,7 +49,9 @@ public class JasperTest {
 		JRAbstractExporter exporter = new PptxShapeExporter();
 		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jprint);
 		exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, fos);
-		exporter.setParameter(PptxShapeExporter.USE_GLASS_PANE, Boolean.TRUE);
+//		exporter.setParameter(PptxShapeExporter.USE_GLASS_PANE, Boolean.TRUE);
+		exporter.setParameter(PptxShapeExporter.SHEET_CUSTOMIZER,
+			new SheetCustomizer[]{ new ChartTextLifter(), new ChartFakeProtect(), new ChartGlassPane() });
 		exporter.exportReport();
 		fos.close();
 		

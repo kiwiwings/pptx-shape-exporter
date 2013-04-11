@@ -107,6 +107,12 @@ public class PptxGraphics2D extends Graphics2D {
 		_group.setInteriorAnchor(anchor);
 		this.fontResolver = fontResolver;
 	}
+	
+	public PptxGraphics2D(FontResolver fontResolver, XSLFSheet slide, XSLFGroupShape group) {
+		xslide = slide;
+		_group = group;
+		this.fontResolver = fontResolver;
+	}
 
 	public void save(Writer writer) {
 		XmlOptions xo = new XmlOptions();
