@@ -11,7 +11,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 import org.apache.poi.xslf.usermodel.XSLFAutoShape;
@@ -21,7 +20,6 @@ public abstract class PptxShapeTextHelper {
 	protected JRPrintText text;
 	protected JRStyledText styledText;
 	protected int offsetX, offsetY;
-	protected JasperReportsContext jasperReportsContext;
 	protected XSLFShape shape;
 	protected XSLFAutoShape shapeBox;
 	protected Locale locale;
@@ -30,8 +28,7 @@ public abstract class PptxShapeTextHelper {
 
 	
 	protected PptxShapeTextHelper(
-		  JasperReportsContext jasperReportsContext
-		, JRPrintText text
+		  JRPrintText text
 		, JRStyledText styledText
 		, int offsetX
 		, int offsetY
@@ -39,7 +36,6 @@ public abstract class PptxShapeTextHelper {
 		, String invalidCharReplacement
 		, FontResolver fontResolver
 	) {
-		this.jasperReportsContext = jasperReportsContext;
 		this.text = text;
 		this.styledText = styledText;
 		this.offsetX = offsetX;

@@ -42,13 +42,13 @@ import java.util.Locale;
 import java.util.Map;
 
 import net.sf.jasperreports.charts.util.DrawChartRenderer;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRCommonElement;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
+import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintEllipse;
@@ -60,27 +60,23 @@ import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.export.GenericElementHandlerEnviroment;
 import net.sf.jasperreports.engine.export.JRExportProgressMonitor;
 import net.sf.jasperreports.engine.export.JRHyperlinkProducer;
-import net.sf.jasperreports.engine.export.JRXmlExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRPptxExporter;
 import net.sf.jasperreports.engine.fill.JRTemplatePrintText;
 import net.sf.jasperreports.engine.fonts.FontFace;
 import net.sf.jasperreports.engine.fonts.FontFamily;
 import net.sf.jasperreports.engine.fonts.FontInfo;
-import net.sf.jasperreports.engine.fonts.FontUtil;
-import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.util.JRFontUtil;
+import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRStyledText;
-import net.sf.jasperreports.engine.util.JRStyledTextUtil;
+import net.sf.jasperreports.engine.util.JRTypeSniffer;
+import net.sf.jasperreports.extensions.ExtensionsEnvironment;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
 import org.apache.commons.logging.Log;
@@ -131,15 +127,15 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String PPTX_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "pptx";
+	public static final String PPTX_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "pptx";
 
 	public static class PptxShapeExportParameter extends JRExporterParameter {
 		protected PptxShapeExportParameter(String name) { super(name); }
 	}
 	
 	public static final JRExporterParameter SHEET_CUSTOMIZER = new PptxShapeExportParameter("sheet customizer");
-	
-	protected static final String PPTX_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.pptx.";
+	public static final String PROPERTY_REPLACE_INVALID_CHARS = JRProperties.PROPERTY_PREFIX + "export.xml.replace.invalid.chars";
+	protected static final String PPTX_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.pptx.";
 
 	protected XMLSlideShow ppt;
 	protected XSLFSheet slide;
@@ -158,19 +154,9 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	
 	
 	/**
-	 * @see #JRPptxExporter(JasperReportsContext)
+	 * @see #JRPptxExporter()
 	 */
-	public PptxShapeExporter() {
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
-	
-	/**
-	 *
-	 */
-	public PptxShapeExporter(JasperReportsContext jasperReportsContext)	{
-		super(jasperReportsContext);
-	}
+	public PptxShapeExporter() {}
 	
 
 	/**
@@ -513,15 +499,13 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	 *
 	 */
 	public void exportText(JRPrintText text) {
-		JasperReportsContext jrctx = getJasperReportsContext();
-
 		JRStyledText styledText = getStyledText(text);
 		Locale locale = getTextLocale(text);
 		PptxShapeTextHelper textHelper;
 		if (outlineFont(text.getFontName(), locale)) {
-			textHelper = new PptxShapeGlyphHelper(jrctx, text, styledText, getOffsetX(), getOffsetY(), locale, invalidCharReplacement, slide, this);
+			textHelper = new PptxShapeGlyphHelper(text, styledText, getOffsetX(), getOffsetY(), locale, invalidCharReplacement, slide, this);
 		} else {
-			textHelper = new PptxShapeRunHelper(jrctx, text, styledText, getOffsetX(), getOffsetY(), locale, invalidCharReplacement, slide, this);
+			textHelper = new PptxShapeRunHelper(text, styledText, getOffsetX(), getOffsetY(), locale, invalidCharReplacement, slide, this);
 		}
 		
 		textHelper.export();
@@ -545,14 +529,14 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		int availableImageHeight = image.getHeight() - topPadding - bottomPadding;
 		availableImageHeight = availableImageHeight < 0 ? 0 : availableImageHeight;
 
-		Renderable renderer = image.getRenderable();
+		JRRenderable renderer = image.getRenderer();
 		
 		if (renderer == null || availableImageWidth == 0 || availableImageHeight == 0) return;
 
-		if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE) {
+		if (renderer.getType() == JRRenderable.TYPE_IMAGE) {
 			// Non-lazy image renderers are all asked for their image data at some point.
 			// Better to test and replace the renderer now, in case of lazy load error.
-			renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
+			renderer = JRImageRenderer.getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
 			if (renderer == null) return;
 		}
 		
@@ -563,9 +547,9 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		double normalHeight = availableImageHeight;
 
 		// Image load might fail.
-		Renderable tmpRenderer =
-			RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
-		Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
+		JRRenderable tmpRenderer =
+				JRImageRenderer.getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
+		Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension();
 		// If renderer was replaced, ignore image dimension.
 		if (tmpRenderer == renderer && dimension != null)
 		{
@@ -747,7 +731,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			PptxGraphics2D grx2 = new PptxGraphics2D(rect, this, slide);
 			// Background color is applied to whole Image
 			backgroundShape = PptxGraphics2D.getShape(rect, slide);
-			renderer.render(jasperReportsContext, grx2, rect);
+			renderer.render(grx2, rect);
 
 			// hyperlinks are only available for visible elements of the chart
 			XSLFGroupShape grp = grx2.getShapeGroup();
@@ -756,8 +740,8 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			hyperlinkShape = grp;
 		} else {
 			//	if (image.isLazy())//FIXMEDOCX learn how to link images				
-			Renderable imgRenderer = image.getRenderable();
-			if (imgRenderer.getTypeValue() == RenderableTypeEnum.SVG) {
+			JRRenderable imgRenderer = image.getRenderer();
+			if (imgRenderer.getType() == JRRenderable.TYPE_SVG) {
 				imgRenderer =
 					new JRWrappingSvgRenderer(
 						imgRenderer,
@@ -766,19 +750,14 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 					);
 			}
 
-			ImageTypeEnum mimeType = imgRenderer.getImageTypeValue();
-			if (mimeType == null) mimeType = ImageTypeEnum.JPEG;
-			int xsMime;
-			switch (mimeType) {
-				default:
-				case UNKNOWN:
-				case JPEG: xsMime = XSLFPictureData.PICTURE_TYPE_JPEG; break;
-				case GIF: xsMime = XSLFPictureData.PICTURE_TYPE_GIF; break;
-				case PNG: xsMime = XSLFPictureData.PICTURE_TYPE_PNG; break;
-				case TIFF: xsMime = XSLFPictureData.PICTURE_TYPE_TIFF; break;
-			}
+			String mimeType = JRTypeSniffer.getImageMimeType(renderer.getImageType());
+			int xsMime = XSLFPictureData.PICTURE_TYPE_JPEG;
+			if (JRRenderable.MIME_TYPE_JPEG.equals(mimeType)) xsMime = XSLFPictureData.PICTURE_TYPE_JPEG;
+			else if (JRRenderable.MIME_TYPE_GIF.equals(mimeType)) xsMime = XSLFPictureData.PICTURE_TYPE_GIF;
+			else if (JRRenderable.MIME_TYPE_PNG.equals(mimeType)) xsMime = XSLFPictureData.PICTURE_TYPE_PNG;
+			else if (JRRenderable.MIME_TYPE_TIFF.equals(mimeType)) xsMime = XSLFPictureData.PICTURE_TYPE_TIFF;
 			
-			byte pictureData[] = imgRenderer.getImageData(jasperReportsContext);
+			byte pictureData[] = imgRenderer.getImageData();
 			
 			int idx = ppt.addPicture(pictureData, xsMime);
 			backgroundShape = slide.createPicture(idx);
@@ -854,20 +833,21 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	}
 
 	protected void setExporterHints() {
-		if(jasperPrint.hasProperties() && jasperPrint.getPropertiesMap().containsProperty(JRXmlExporter.PROPERTY_REPLACE_INVALID_CHARS)) {
+		if(jasperPrint.hasProperties() && jasperPrint.getPropertiesMap().containsProperty(PROPERTY_REPLACE_INVALID_CHARS)) {
 			// allows null values for the property
-			invalidCharReplacement = jasperPrint.getProperty(JRXmlExporter.PROPERTY_REPLACE_INVALID_CHARS);
+			invalidCharReplacement = jasperPrint.getProperty(PROPERTY_REPLACE_INVALID_CHARS);
 		} else {
-			invalidCharReplacement = getPropertiesUtil().getProperty(JRXmlExporter.PROPERTY_REPLACE_INVALID_CHARS, jasperPrint);
+			invalidCharReplacement = JRProperties.getProperty(PROPERTY_REPLACE_INVALID_CHARS, jasperPrint);
 		}
 	}
 	
 	protected void embedFonts() throws JRException, IOException, InvalidFormatException {
-		RepositoryUtil ru = RepositoryUtil.getInstance(jasperReportsContext);
-		
-		List<FontFamily> ferList = jasperReportsContext.getExtensions(FontFamily.class);
+		List<FontFamily> ferList = 
+			ExtensionsEnvironment
+			.getExtensionsRegistry()
+			.getExtensions(FontFamily.class);
 		if (ferList == null || ferList.size() == 0) return;
-
+		
 		FontFactory fontfac = FontFactory.getInstance();
 		EOTWriter conv = new EOTWriter(true); // generate MicroTypeExpress (mtx) fonts
 
@@ -891,7 +871,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 				if (ffTypes[i] == null) continue;
 				String fileRelPath = ffTypes[i].getFile();
 				String fntDataName = fileRelPath.replaceAll(".*/(.*).ttf", "$1.fntdata");
-				byte fontBytes[] = ru.getBytesFromLocation(fileRelPath);
+				byte fontBytes[] = RepositoryUtil.getBytes(fileRelPath);
 				
 				Font fonts[] = fontfac.loadFonts(fontBytes);
 				assert(fonts != null && fonts.length == 1);
@@ -960,9 +940,8 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 					if (el1 instanceof JRTemplatePrintText) {
 						JRTemplatePrintText jpr1 = (JRTemplatePrintText)el1;
 						JRTemplatePrintText jpr2 = (JRTemplatePrintText)el2;
-						JRStyledTextUtil jstu = JRStyledTextUtil.getInstance(getJasperReportsContext());
-						String str1 = jstu.getTruncatedText(jpr1);
-						String str2 = jstu.getTruncatedText(jpr2);
+						String str1 = jpr1.getText();
+						String str2 = jpr2.getText();
 						if (!str1.equals(str2)) break;
 					}
 					
@@ -991,7 +970,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	}
 
 	protected String exportFont(String family, Locale locale, boolean returnSpecial) {
-		FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(family, locale);
+		FontInfo fontInfo = JRFontUtil.getFontInfo(family, locale);
 		if (fontInfo == null) return null;
 
 		String mappedFont = fontInfo.getFontFamily().getExportFont(JRPptxExporter.PPTX_EXPORTER_KEY);
@@ -1008,7 +987,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 
 	public java.awt.Font loadFont(Map<Attribute,Object> attr, Locale locale) {
 		String family = (String)attr.get(TextAttribute.FAMILY);
-		FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(family, locale);
+		FontInfo fontInfo = JRFontUtil.getFontInfo(family, locale);
 		if (fontInfo == null || fontInfo.getFontFamily() == null) {
 			return java.awt.Font.getFont(attr);
 		}

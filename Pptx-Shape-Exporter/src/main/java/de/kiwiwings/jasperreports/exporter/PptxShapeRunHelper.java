@@ -9,7 +9,6 @@ import java.util.Map;
 
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
-import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 import org.apache.poi.xslf.usermodel.TextAlign;
@@ -28,8 +27,7 @@ public class PptxShapeRunHelper extends PptxShapeTextHelper {
 	
 	
 	public PptxShapeRunHelper(
-		  JasperReportsContext jasperReportsContext
-		, JRPrintText text
+		  JRPrintText text
 		, JRStyledText styledText
 		, int offsetX
 		, int offsetY
@@ -38,7 +36,7 @@ public class PptxShapeRunHelper extends PptxShapeTextHelper {
 		, XSLFSheet slide
 		, FontResolver fontResolver
 	) {
-		super(jasperReportsContext, text, styledText, offsetX, offsetY, locale, invalidCharReplacement, fontResolver);
+		super(text, styledText, offsetX, offsetY, locale, invalidCharReplacement, fontResolver);
 		textBox = slide.createTextBox();
 		initShape(textBox, textBox);
 		

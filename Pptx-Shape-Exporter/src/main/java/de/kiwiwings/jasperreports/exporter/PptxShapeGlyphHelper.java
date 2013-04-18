@@ -12,7 +12,6 @@ import java.util.Map;
 
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
-import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 import org.apache.poi.xslf.usermodel.XSLFAutoShape;
@@ -36,8 +35,7 @@ public class PptxShapeGlyphHelper extends PptxShapeTextHelper {
 	protected float baselineOffset = 0f;
 	
 	public PptxShapeGlyphHelper(
-		  JasperReportsContext jasperReportsContext
-		, JRPrintText text
+		  JRPrintText text
 		, JRStyledText styledText
 		, int offsetX
 		, int offsetY
@@ -46,7 +44,7 @@ public class PptxShapeGlyphHelper extends PptxShapeTextHelper {
 		, XSLFSheet slide
 		, FontResolver fontResolver
 	) {
-		super(jasperReportsContext, text, styledText, offsetX, offsetY, locale, invalidCharReplacement, fontResolver);
+		super(text, styledText, offsetX, offsetY, locale, invalidCharReplacement, fontResolver);
 		gctx = new PptxGraphics2D(getBounds(), fontResolver, slide);
 		initShape(gctx.getShapeGroup());
 		textBox = new PptxTextBlock();
