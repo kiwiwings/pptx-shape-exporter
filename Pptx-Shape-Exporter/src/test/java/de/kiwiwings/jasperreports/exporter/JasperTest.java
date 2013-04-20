@@ -1,6 +1,8 @@
 package de.kiwiwings.jasperreports.exporter;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -41,8 +43,20 @@ public class JasperTest {
 
 		if (false) testXls(lCon);
 
+		FileReader fr = new FileReader(jrxmlFile);
+		StringBuffer sb = new StringBuffer();
+		char buf[] = new char[1024];
+		for (int readBytes; (readBytes = fr.read(buf)) != -1; sb.append(buf,0,readBytes));
+		fr.close();
+
+		// Convert Jasper 5.0.1 input file to 4.5.1
+		String jrxmlContent = sb.toString();
+		jrxmlContent = jrxmlContent.replaceAll(" uuid=\"[^\"]*\"", "");
+		
+		ByteArrayInputStream bis = new ByteArrayInputStream(jrxmlContent.getBytes("UTF-8"));
+		JasperReport jrep = JasperCompileManager.compileReport(bis);
+		
 		Map<String,Object> hm = new HashMap<String, Object>();
-		JasperReport jrep = JasperCompileManager.compileReport(jrxmlFile.getAbsolutePath());
 		JasperPrint jprint = JasperFillManager.fillReport(jrep, hm, lCon);
 
 		FileOutputStream fos = new FileOutputStream("jasperdebug.pptx");

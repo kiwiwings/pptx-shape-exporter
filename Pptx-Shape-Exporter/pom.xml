@@ -2,9 +2,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.kiwiwings.jasperreports.exporter</groupId>
-	<artifactId>Pptx-Shape-Exporter</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<artifactId>pptx-shape-exporter</artifactId>
+	<version>5.0.1</version>
 
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	
 	<repositories>
 		<repository>
 			<id>sfntly-repo</id>
@@ -14,11 +18,6 @@
 	</repositories>
 
 	<dependencies>
-		<!-- dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi</artifactId>
-			<version>3.8</version>
-		</dependency -->
 		<dependency>
 			<groupId>net.sf.jasperreports</groupId>
 			<artifactId>jasperreports</artifactId>
@@ -34,22 +33,6 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<!-- dependency>
-			<groupId>org.freehep</groupId>
-			<artifactId>freehep-graphicsio-emf</artifactId>
-			<version>2.2</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>junit</artifactId>
-					<groupId>junit</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.xmlgraphics</groupId>
-			<artifactId>xmlgraphics-commons</artifactId>
-			<version>1.5</version>
-		</dependency -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
@@ -64,21 +47,8 @@
 			<groupId>org.apache.poi</groupId>
 			<artifactId>ooxml-schemas</artifactId>
 			<version>1.1</version>
-			<scope>provided</scope>
+			<!-- don't use scope provided here, as it gets shaded anyway later -->
 		</dependency>
-		<!-- dependency>
-			<groupId>com.ibm.icu</groupId>
-			<artifactId>icu4j</artifactId>
-			<version>4.8.1.1</version>
-		</dependency -->
-		<!-- dependency>
-			<groupId>com.ibm.icu</groupId>
-			<artifactId>icu4j</artifactId>
-			<version>4.8.1.1</version>
-			<classifier>charset</classifier>
-			<scope>system</scope>
-			<systemPath>${basedir}/lib/icu4j-charset-4_8_1_1.jar</systemPath>
-		</dependency -->
 		<dependency>
 			<groupId>com.google.typography</groupId>
 			<artifactId>sfntly</artifactId>
@@ -119,21 +89,45 @@
 						</goals>
 						<configuration>
 							<artifactSet>
-							<includes>
-								<include>com.google.typography:*</include>
-								<include>org.apache.poi:ooxml-schemas:1.1</include>
-								<include>de.kiwiwings.jasperreports.exporter:Pptx-Shape-Exporter</include>
-							</includes>
+								<includes>
+									<include>com.google.typography:*</include>
+									<include>org.apache.poi:ooxml-schemas</include>
+									<include>de.kiwiwings.jasperreports.exporter:Pptx-Shape-Exporter</include>
+								</includes>
 							</artifactSet>
 							<filters>
 								<filter>
-									<artifact>org.apache.poi:ooxml-schemas:1.1</artifact>
+									<artifact>org.apache.poi:ooxml-schemas</artifact>
 									<includes>
-										<include>**/*CTEmbeddedFont*.class</include>
+										<include>**/CTShapeLocking*.class</include>
+										<include>**/CTGroupLocking*.class</include>
+										<include>**/CTEmbeddedFont*.class</include>
 									</includes>
 								</filter>
 							</filters>
 						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.1</version>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>2.2.1</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>

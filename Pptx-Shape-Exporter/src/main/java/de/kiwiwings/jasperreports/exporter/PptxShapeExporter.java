@@ -110,6 +110,7 @@ import org.openxmlformats.schemas.presentationml.x2006.main.CTEmbeddedFontDataId
 import org.openxmlformats.schemas.presentationml.x2006.main.CTEmbeddedFontList;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTEmbeddedFontListEntry;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTPicture;
+import org.openxmlformats.schemas.presentationml.x2006.main.CTPresentation;
 
 import com.google.typography.font.sfntly.Font;
 import com.google.typography.font.sfntly.FontFactory;
@@ -539,10 +540,10 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		int rightPadding = image.getLineBox().getRightPadding().intValue();
 		int bottomPadding = image.getLineBox().getBottomPadding().intValue();
 
-		int availableImageWidth = image.getWidth() - leftPadding - rightPadding;
+		double availableImageWidth = image.getWidth() - leftPadding - rightPadding;
 		availableImageWidth = availableImageWidth < 0 ? 0 : availableImageWidth;
 
-		int availableImageHeight = image.getHeight() - topPadding - bottomPadding;
+		double availableImageHeight = image.getHeight() - topPadding - bottomPadding;
 		availableImageHeight = availableImageHeight < 0 ? 0 : availableImageHeight;
 
 		Renderable renderer = image.getRenderable();
@@ -556,9 +557,6 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			if (renderer == null) return;
 		}
 		
-		int width = availableImageWidth;
-		int height = availableImageHeight;
-
 		double normalWidth = availableImageWidth;
 		double normalHeight = availableImageHeight;
 
@@ -567,8 +565,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
 		Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
 		// If renderer was replaced, ignore image dimension.
-		if (tmpRenderer == renderer && dimension != null)
-		{
+		if (tmpRenderer == renderer && dimension != null) {
 			normalWidth = dimension.getWidth();
 			normalHeight = dimension.getHeight();
 		}
@@ -579,165 +576,44 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		double cropRight = 0;
 		
 		switch (image.getScaleImageValue()) {
-			case FILL_FRAME : {
-				width = availableImageWidth;
-				height = availableImageHeight;
-//					cropTop = 100000 * topPadding / availableImageHeight;
-//					cropLeft = 100000 * leftPadding / availableImageWidth;
-//					cropBottom = 100000 * bottomPadding / availableImageHeight;
-//					cropRight = 100000 * rightPadding / availableImageWidth;
+			case FILL_FRAME :
+//				width = availableImageWidth;
+//				height = availableImageHeight;
 				break;
-			}
-			case CLIP : {
-//					if (normalWidth > availableImageWidth)
-//					{
-					switch (image.getHorizontalAlignmentValue())
-					{
-						case RIGHT :
-						{
-							cropLeft = 100000 * (availableImageWidth - normalWidth) / availableImageWidth;
-							cropRight = 0;
-//								cropRight = 100000 * rightPadding / availableImageWidth;
-							break;
-						}
-						case CENTER :
-						{
-							cropLeft = 100000 * (availableImageWidth - normalWidth) / availableImageWidth / 2;
-							cropRight = cropLeft;
-							break;
-						}
-						case LEFT :
-						default :
-						{
-//								cropLeft = 100000 * leftPadding / availableImageWidth;
-							cropLeft = 0;
-							cropRight = 100000 * (availableImageWidth - normalWidth) / availableImageWidth;
-							break;
-						}
-					}
-//						width = availableImageWidth;
-////						cropLeft = cropLeft / 0.75d;
-////						cropRight = cropRight / 0.75d;
-//					}
-//					else
-//					{
-//						width = (int)normalWidth;
-//					}
 
-//					if (normalHeight > availableImageHeight)
-//					{
-					switch (image.getVerticalAlignmentValue())
-					{
-						case TOP :
-						{
-//								cropTop = 100000 * topPadding / availableImageHeight;
-							cropTop = 0;
-							cropBottom = 100000 * (availableImageHeight - normalHeight) / availableImageHeight;
-							break;
-						}
-						case MIDDLE :
-						{
-							cropTop = 100000 * (availableImageHeight - normalHeight) / availableImageHeight / 2;
-							cropBottom = cropTop;
-							break;
-						}
-						case BOTTOM :
-						default :
-						{
-							cropTop = 100000 * (availableImageHeight - normalHeight) / availableImageHeight;
-							cropBottom = 0;
-//								cropBottom = 100000 * bottomPadding / availableImageHeight;
-							break;
-						}
-					}
-//						height = availableImageHeight;
-//						cropTop = cropTop / 0.75d;
-//						cropBottom = cropBottom / 0.75d;
-//					}
-//					else
-//					{
-//						height = (int)normalHeight;
-//					}
-
-				break;
-			}
-			case RETAIN_SHAPE :
 			default :
-			{
-				if (availableImageHeight > 0)
-				{
-					double ratio = normalWidth / normalHeight;
-
-					if( ratio > availableImageWidth / (double)availableImageHeight )
-					{
-						width = availableImageWidth;
-						height = (int)(width/ratio);
-
-						switch (image.getVerticalAlignmentValue())
-						{
-							case TOP :
-							{
-								cropTop = 0;
-								cropBottom = 100000 * (availableImageHeight - height) / availableImageHeight;
-								break;
-							}
-							case MIDDLE :
-							{
-								cropTop = 100000 * (availableImageHeight - height) / availableImageHeight / 2;
-								cropBottom = cropTop;
-								break;
-							}
-							case BOTTOM :
-							default :
-							{
-								cropTop = 100000 * (availableImageHeight - height) / availableImageHeight;
-								cropBottom = 0;
-								break;
-							}
-						}
+			case RETAIN_SHAPE :
+				if (availableImageWidth > 0 && availableImageHeight > 0) {
+					if (normalWidth > availableImageWidth) {
+						normalHeight /= normalWidth/availableImageWidth;
+						normalWidth = availableImageWidth;
 					}
-					else
-					{
-						height = availableImageHeight;
-						width = (int)(ratio * height);
-
-						switch (image.getHorizontalAlignmentValue())
-						{
-							case RIGHT :
-							{
-								cropLeft = 100000 * (availableImageWidth - width) / availableImageWidth;
-								cropRight = 0;
-								break;
-							}
-							case CENTER :
-							{
-								cropLeft = 100000 * (availableImageWidth - width) / availableImageWidth / 2;
-								cropRight = cropLeft;
-								break;
-							}
-							case LEFT :
-							default :
-							{
-								cropLeft = 0;
-								cropRight = 100000 * (availableImageWidth - width) / availableImageWidth;
-								break;
-							}
-						}
+					if (normalHeight > availableImageHeight) {
+						normalWidth /= normalHeight/availableImageHeight;
+						normalHeight = availableImageHeight;
 					}
 				}
-			}
+				// nobreak
+			
+			case CLIP : 
+				if (availableImageWidth > 0 && availableImageHeight > 0) {
+					double reducedWidth = getOffsetInPercent(normalWidth,availableImageWidth);
+					switch (image.getHorizontalAlignmentValue()) {
+						default :
+						case LEFT : cropRight = reducedWidth; break;
+						case RIGHT : cropLeft = reducedWidth; break;
+						case CENTER : cropLeft = cropRight = reducedWidth/2d; break;
+					}
+					double reducedHeight = getOffsetInPercent(normalHeight,availableImageHeight);
+					switch (image.getVerticalAlignmentValue()) {
+						default :
+						case BOTTOM : cropTop = reducedHeight; break;
+						case TOP : cropBottom = reducedHeight; break;
+						case MIDDLE : cropTop = cropBottom = reducedHeight/2; break;
+					}
+				}
+				break;
 		}
-
-//			insertPageAnchor();
-//			if (image.getAnchorName() != null)
-//			{
-//				tempBodyWriter.write("<text:bookmark text:name=\"");
-//				tempBodyWriter.write(image.getAnchorName());
-//				tempBodyWriter.write("\"/>");
-//			}
-
-
-//			boolean startedHyperlink = startHyperlink(image,false);
 
 		XSLFSimpleShape backgroundShape;
 		XSLFShape hyperlinkShape;
@@ -746,7 +622,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			Rectangle2D rect = new Rectangle2D.Double(image.getX(), image.getY(), image.getWidth(), image.getHeight());
 			PptxGraphics2D grx2 = new PptxGraphics2D(rect, this, slide);
 			// Background color is applied to whole Image
-			backgroundShape = PptxGraphics2D.getShape(rect, slide);
+			backgroundShape = grx2.getShape(rect);
 			renderer.render(jasperReportsContext, grx2, rect);
 
 			// hyperlinks are only available for visible elements of the chart
@@ -786,7 +662,8 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			CTPicture ct = (CTPicture)backgroundShape.getXmlObject();
 
 			if (cropTop != 0 || cropRight != 0 || cropBottom != 0 || cropLeft != 0) {
-				CTRelativeRect rrect = ct.getBlipFill().getStretch().getFillRect();
+//				CTRelativeRect rrect = ct.getBlipFill().getStretch().getFillRect();
+				CTRelativeRect rrect = ct.getBlipFill().addNewSrcRect();
 				rrect.setT((int)cropTop);
 				rrect.setR((int)cropRight);
 				rrect.setB((int)cropBottom);
@@ -805,7 +682,11 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		exportElementAttributes(backgroundShape, image, image.getLinePen(), image, hyperlinkShape);
 	}
 
-
+	protected static double getOffsetInPercent(double normalSize, double availableSize) {
+		return -100000d*(availableSize-normalSize)/normalSize;
+	}
+	
+	
 	/**
 	 *
 	 */
@@ -867,20 +748,19 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		
 		List<FontFamily> ferList = jasperReportsContext.getExtensions(FontFamily.class);
 		if (ferList == null || ferList.size() == 0) return;
-
+		
 		FontFactory fontfac = FontFactory.getInstance();
 		EOTWriter conv = new EOTWriter(true); // generate MicroTypeExpress (mtx) fonts
 
-		ppt.getCTPresentation().setEmbedTrueTypeFonts(true);
-		ppt.getCTPresentation().setSaveSubsetFonts(true);
-		
 		CTEmbeddedFontList fontList = null;
 		
+		boolean anyFontsEmbedded = false;
 		for (FontFamily ff : ferList) {
 			if (!"embed".equals(ff.getExportFont(PPTX_EXPORTER_KEY))) {
 				// don't export font
 				continue;
 			}
+			anyFontsEmbedded = true;
 			
 			// "<p:font typeface=\"AllianzLogo\" pitchFamily=\"49\" charset=\"2\"/><p:regular r:id=\"rId13\"/>"
 			FontFace ffTypes[] = { ff.getNormalFace(), ff.getBoldFace(), ff.getItalicFace(), ff.getBoldItalicFace() };
@@ -926,7 +806,12 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 				
 				fntId.setId(prs.getId());
 			}
-			
+		}
+
+		if (anyFontsEmbedded) {
+			CTPresentation pres = ppt.getCTPresentation();
+			pres.setEmbedTrueTypeFonts(true);
+			pres.setSaveSubsetFonts(true);
 		}
 	}
 

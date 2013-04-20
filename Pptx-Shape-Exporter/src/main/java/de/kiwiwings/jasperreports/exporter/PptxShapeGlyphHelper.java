@@ -77,6 +77,7 @@ public class PptxShapeGlyphHelper extends PptxShapeTextHelper {
 		super.export();
 		Rectangle2D rect = getBounds();
 		textBox.setLimits(new Size2D(rect.getWidth(), rect.getHeight()));
+		gctx.setLocale(locale);
 		textBox.draw(gctx, (float)rect.getX(), (float)rect.getY(), TextBlockAnchor.TOP_LEFT);
 	}
 	

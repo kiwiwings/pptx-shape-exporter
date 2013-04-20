@@ -146,6 +146,7 @@ public abstract class PptxShapeTextHelper {
 		LineBreakMeasurer measurer = new LineBreakMeasurer(aci, frc);
 		float wrappingWidth = (float)getBounds().getWidth();
 		switch (text.getRotationValue()) {
+			// TODO: wrappingWidth is still mostly too small
 			case LEFT:
 			case RIGHT: wrappingWidth += 25f; break;
 			default:

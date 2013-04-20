@@ -42,6 +42,7 @@ import java.io.Writer;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedCharacterIterator.Attribute;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang3.SerializationUtils;
@@ -90,6 +91,9 @@ public class PptxGraphics2D extends Graphics2D {
 	protected Color _background = Color.white;
 	protected RenderingHints _hints = new RenderingHints(null);
 	protected Composite _composite = null;
+	
+	// Locale for text rendering
+	protected Locale locale = null;
 
 	public PptxGraphics2D(Rectangle2D anchor, FontResolver fontResolver) {
 		pptx = new XMLSlideShow();
@@ -379,7 +383,8 @@ public class PptxGraphics2D extends Graphics2D {
 
                 // change the font
                 attributes = iterator.getAttributes();
-                setFont(Font.getFont(attributes));
+                
+                setFont( fontResolver.loadFont(attributes, getLocale()) );
                 if (attributes.containsKey(TextAttribute.FOREGROUND)) {
                 	setColor((Color)attributes.get(TextAttribute.FOREGROUND));
                 }
@@ -2259,4 +2264,12 @@ public class PptxGraphics2D extends Graphics2D {
     	double rad = Math.atan2(p1.getY(),p1.getX());
     	return rad*180d/Math.PI;
     }
+
+	public Locale getLocale() {
+		return locale;
+	}
+
+	public void setLocale(Locale locale) {
+		this.locale = locale;
+	}
 }
