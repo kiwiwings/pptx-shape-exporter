@@ -28,7 +28,7 @@ public class ChartFakeProtect implements SheetCustomizer {
 				if (!(shape instanceof XSLFTextBox)) continue;
 				CTShape xshape = (CTShape)shape.getXmlObject();
 				CTShapeLocking spLock = xshape.getNvSpPr().getCNvSpPr().addNewSpLocks();
-				spLock.setNoTextEdit(true);
+				spLock.setNoSelect(true);
 			}
 		}
 	}
