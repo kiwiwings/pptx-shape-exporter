@@ -31,17 +31,17 @@
 			</textField>
 			<textField isStretchWithOverflow="true">
 				<reportElement uuid="6a2b3375-1e8d-45c8-bc2c-f1a05cae1606" x="84" y="450" width="116" height="20"/>
-				<textElement>
+				<textElement markup="styled">
 					<font fontName="SansSerif"/>
 				</textElement>
-				<textFieldExpression><![CDATA["Page: <fld:slidenum/> of "]]></textFieldExpression>
+				<textFieldExpression><![CDATA["<i>Page</i>: <style isUnderline=\"true\">{fld:slidenum}</style><b> of </b>"]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true">
 				<reportElement uuid="edb42313-e751-4f1b-9c52-2c3e917c5d9c" x="84" y="469" width="116" height="20"/>
 				<textElement>
 					<font fontName="AllianzSans"/>
 				</textElement>
-				<textFieldExpression><![CDATA["Page: <fld:slidenum/>("+$V{PAGE_NUMBER}+") of "]]></textFieldExpression>
+				<textFieldExpression><![CDATA["Page: {fld:slidenum}("+$V{PAGE_NUMBER}+") of "]]></textFieldExpression>
 			</textField>
 		</band>
 	</background>

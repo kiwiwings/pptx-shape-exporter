@@ -852,7 +852,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 
 						// Special case - slide number fields in outline fonts
 						// have to be rendered on every page
-						if (str1.contains("<fld:slidenum/>")
+						if (str1.contains("{fld:slidenum}")
 							&& outlineFont(jpr1.getFontName(), getTextLocale(jpr1))) break;
 					}
 					

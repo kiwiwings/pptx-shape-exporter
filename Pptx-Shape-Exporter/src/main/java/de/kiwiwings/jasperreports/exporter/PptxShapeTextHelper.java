@@ -54,7 +54,7 @@ public abstract class PptxShapeTextHelper {
 		this.invalidCharReplacement = invalidCharReplacement;
 		this.fontResolver = fontResolver;
 		this.slideNum = slideNum;
-		this.fieldPattern = Pattern.compile("<fld:([^/>]+)/>");
+		this.fieldPattern = Pattern.compile("\\{fld:([^}]+)\\}");
 	}
 	
 	public int getRotation() {
