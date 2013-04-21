@@ -5,10 +5,16 @@ import java.awt.Font;
 import java.awt.Paint;
 import java.awt.font.TextAttribute;
 import java.awt.geom.Rectangle2D;
+import java.text.AttributedCharacterIterator;
+import java.text.AttributedString;
 import java.text.AttributedCharacterIterator.Attribute;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
@@ -43,8 +49,9 @@ public class PptxShapeGlyphHelper extends PptxShapeTextHelper {
 		, String invalidCharReplacement
 		, XSLFSheet slide
 		, FontResolver fontResolver
+		, int slideNum
 	) {
-		super(text, styledText, offsetX, offsetY, locale, invalidCharReplacement, fontResolver);
+		super(text, styledText, offsetX, offsetY, locale, invalidCharReplacement, fontResolver, slideNum);
 		gctx = new PptxGraphics2D(getBounds(), fontResolver, slide);
 		initShape(gctx.getShapeGroup());
 		textBox = new PptxTextBlock();
@@ -149,6 +156,58 @@ public class PptxShapeGlyphHelper extends PptxShapeTextHelper {
 
 	protected boolean useLineBreakMeasurer() {
 		return true;
+	}
+
+	/*
+	 * Replace fields with the calculated text fragments 
+	 */
+	protected AttributedString getAttributedString(StringBuffer strippedText) {
+		// taken from http://forums.devx.com/showthread.php?152271-Substring-replacement-on-AttributedString
+		Pattern myPattern = getFieldPattern();
+		AttributedString as = super.getAttributedString(strippedText);
+		if (!myPattern.matcher(strippedText).find()) {
+			return as;
+		}
+
+		List<Map<Attribute,Object>> attList = new ArrayList<Map<Attribute,Object>>();
+		List<int[]> indexList = new ArrayList<int[]>();
+		StringBuffer sb = new StringBuffer();
+		
+		AttributedCharacterIterator aci = as.getIterator();
+		for (int begin=0, next=0; begin < strippedText.length(); begin = next+1) {
+			aci.setIndex(begin);
+			next = aci.getRunLimit();
+			attList.add(aci.getAttributes());
+			int startIdx = sb.length();
+			
+			Matcher m = myPattern.matcher(strippedText.substring(begin, next));
+			while (m.find()) {
+				String field = m.group(1);
+				String value = "";
+				if ("slidenum".equals(field)) {
+					value = Integer.toString(slideNum+1);
+				}
+				m.appendReplacement(sb, value);
+			}
+			m.appendTail(sb);
+			
+			indexList.add(new int[]{startIdx,sb.length()});
+		}
+		
+		
+		AttributedString newAs = new AttributedString(sb.toString());
+		for (int i=0; i<attList.size(); i++) {
+			int index[] = indexList.get(i);
+			newAs.addAttributes(attList.get(i), index[0], index[1]);
+		}
+
+		strippedText.replace(0, strippedText.length(), sb.toString());
+		
+		return newAs;
+	}
+	
+	protected void addField(String type) {
+		// fields have been already replaced
 	}
 }
 
