@@ -15,6 +15,7 @@ import net.sf.jasperreports.engine.util.JRStyledText;
 import org.apache.poi.xslf.usermodel.TextAlign;
 import org.apache.poi.xslf.usermodel.VerticalAlignment;
 import org.apache.poi.xslf.usermodel.XSLFSheet;
+import org.apache.poi.xslf.usermodel.XSLFSimpleShapeHelper;
 import org.apache.poi.xslf.usermodel.XSLFTextBox;
 import org.apache.poi.xslf.usermodel.XSLFTextParagraph;
 import org.apache.poi.xslf.usermodel.XSLFTextRun;
@@ -37,8 +38,9 @@ public class PptxShapeRunHelper extends PptxShapeTextHelper {
 		, String invalidCharReplacement
 		, XSLFSheet slide
 		, FontResolver fontResolver
+		, int slideNum
 	) {
-		super(jasperReportsContext, text, styledText, offsetX, offsetY, locale, invalidCharReplacement, fontResolver);
+		super(jasperReportsContext, text, styledText, offsetX, offsetY, locale, invalidCharReplacement, fontResolver, slideNum);
 		textBox = slide.createTextBox();
 		initShape(textBox, textBox);
 		
@@ -94,6 +96,10 @@ public class PptxShapeRunHelper extends PptxShapeTextHelper {
 		return false;
 	}
 
+	protected void addField(String type) {
+		textRun = XSLFSimpleShapeHelper.addTextField(textPara, type);
+		textRun.setText(type);
+	}
 	
 	protected void setAttributes(Map<Attribute,Object> attr) {
 		JRStyle style = text.getStyle();

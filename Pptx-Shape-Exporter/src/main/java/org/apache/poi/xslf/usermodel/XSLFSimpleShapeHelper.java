@@ -17,6 +17,8 @@ import org.openxmlformats.schemas.drawingml.x2006.main.CTPath2DCubicBezierTo;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTPath2DQuadBezierTo;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTPositiveFixedPercentage;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTShapeProperties;
+import org.openxmlformats.schemas.drawingml.x2006.main.CTTextCharacterProperties;
+import org.openxmlformats.schemas.drawingml.x2006.main.CTTextField;
 
 public class XSLFSimpleShapeHelper extends XSLFSimpleShape {
 	XSLFSimpleShapeHelper() {
@@ -183,5 +185,15 @@ public class XSLFSimpleShapeHelper extends XSLFSimpleShape {
 
 	public static void setShapeName(XSLFSimpleShape shape, String name) {
 		shape.getNvPr().setName(name);
+	}
+
+	public static XSLFTextField addTextField(XSLFTextParagraph para, String type) {
+		CTTextField fld = para.getXmlObject().addNewFld();
+		CTTextCharacterProperties rPr = fld.addNewRPr();
+		rPr.setLang("en-US");
+		fld.setType(type);
+		XSLFTextField txtFld = new XSLFTextField(fld, para);
+		para.getTextRuns().add(txtFld);
+		return txtFld;
 	}
 }

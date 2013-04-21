@@ -7,8 +7,11 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedCharacterIterator.Attribute;
+import java.text.AttributedString;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JasperReportsContext;
@@ -27,6 +30,8 @@ public abstract class PptxShapeTextHelper {
 	protected Locale locale;
 	protected String invalidCharReplacement;
 	protected FontResolver fontResolver;
+	protected int slideNum;
+	protected final Pattern fieldPattern;
 
 	
 	protected PptxShapeTextHelper(
@@ -38,6 +43,7 @@ public abstract class PptxShapeTextHelper {
 		, Locale locale
 		, String invalidCharReplacement
 		, FontResolver fontResolver
+		, int slideNum
 	) {
 		this.jasperReportsContext = jasperReportsContext;
 		this.text = text;
@@ -47,6 +53,8 @@ public abstract class PptxShapeTextHelper {
 		this.locale = locale;
 		this.invalidCharReplacement = invalidCharReplacement;
 		this.fontResolver = fontResolver;
+		this.slideNum = slideNum;
+		this.fieldPattern = Pattern.compile("<fld:([^/>]+)/>");
 	}
 	
 	public int getRotation() {
@@ -136,13 +144,25 @@ public abstract class PptxShapeTextHelper {
 
 	protected abstract void setText(String text);
 
-	protected abstract boolean useLineBreakMeasurer(); 
+	protected abstract boolean useLineBreakMeasurer();
+	
+	protected abstract void addField(String type);
+	
+	/*
+	 * Request the text field content
+	 * In case of modified content a new AttributedString is returned and
+	 * the StringBuffer is always filled with the corresponding text
+	 */
+	protected AttributedString getAttributedString(StringBuffer strippedText) {
+		strippedText.append(styledText.getText());
+		return styledText.getAttributedString();
+	}
 	
 	public void export() {
-		String plain = styledText.getText();
+		StringBuffer strippedText = new StringBuffer();
 		FontRenderContext frc = new FontRenderContext(new AffineTransform(), false, true);
-		AttributedCharacterIterator aci = styledText.getAttributedString().getIterator();
-
+		AttributedCharacterIterator aci = getAttributedString(strippedText).getIterator();
+		
 		LineBreakMeasurer measurer = new LineBreakMeasurer(aci, frc);
 		float wrappingWidth = (float)getBounds().getWidth();
 		switch (text.getRotationValue()) {
@@ -152,17 +172,17 @@ public abstract class PptxShapeTextHelper {
 			default:
 		}
 
-		for (int last=0;last < plain.length();) {
+		for (int last=0;last < strippedText.length();) {
 			if (last > 0) addLineBreak();
 
 			int next = (useLineBreakMeasurer()) 
-					? Math.min(measurer.nextOffset(wrappingWidth),plain.length())
-					: plain.length();
+					? Math.min(measurer.nextOffset(wrappingWidth),strippedText.length())
+					: strippedText.length();
 
 			while (last < next) {
 				boolean addNewLine = false;
 				aci.setIndex(last);
-				int newline = plain.indexOf('\n', last);
+				int newline = strippedText.indexOf("\n", last);
 				if (newline == -1) newline = Integer.MAX_VALUE;
 				int aciLimit = aci.getRunLimit();
 
@@ -176,9 +196,8 @@ public abstract class PptxShapeTextHelper {
 					limit = next;
 				}
 
-				addTextRun();
-				setAttributes(aci.getAttributes());
-				setText(plain.substring(last, limit));
+				String fragment = strippedText.substring(last, limit);
+				exportFragment(fragment, aci.getAttributes());
 
 				if (addNewLine)	{
 					next = ++limit;
@@ -190,5 +209,35 @@ public abstract class PptxShapeTextHelper {
 			measurer.nextLayout(wrappingWidth, next, false);
 			last = next;
 		}
+	}
+
+	protected void exportFragment(String fragment, Map<Attribute,Object> attributes) {
+		Pattern fldPat = getFieldPattern();
+		StringBuffer sb = new StringBuffer();
+		Matcher m = fldPat.matcher(fragment);
+		while (m.find()) {
+			String field = m.group(1);
+			sb.setLength(0);
+			m.appendReplacement(sb, "");
+			if (sb.length()>0) {
+				addTextRun();
+				setAttributes(attributes);
+				setText(sb.toString());
+			}
+			addField(field);
+			setAttributes(attributes);
+		}
+		
+		sb.setLength(0);
+		m.appendTail(sb);
+		if (sb.length()>0) {
+			addTextRun();
+			setAttributes(attributes);
+			setText(sb.toString());
+		}
+	}
+	
+	protected Pattern getFieldPattern() {
+		return fieldPattern;
 	}
 }

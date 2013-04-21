@@ -2,7 +2,7 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report name" pageWidth="500" pageHeight="600" columnWidth="500" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="6ea4779a-d652-4a1c-ac51-fa1705476948">
 	<property name="ireport.zoom" value="1.0"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="0"/>
+	<property name="ireport.y" value="2014"/>
 	<subDataset name="ds" uuid="a2fef776-ef6d-4e8d-8f88-bbe201a5b150">
 		<queryString>
 			<![CDATA[select top 10 * from [NPS$]]]>
@@ -29,10 +29,19 @@
 				<textElement/>
 				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
 			</textField>
-			<textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="6a2b3375-1e8d-45c8-bc2c-f1a05cae1606" x="84" y="450" width="116" height="20"/>
+				<textElement>
+					<font fontName="SansSerif"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page: <fld:slidenum/> of "]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
 				<reportElement uuid="edb42313-e751-4f1b-9c52-2c3e917c5d9c" x="84" y="469" width="116" height="20"/>
-				<textElement/>
-				<textFieldExpression><![CDATA["Page: "+$V{PAGE_NUMBER}+" of "]]></textFieldExpression>
+				<textElement>
+					<font fontName="AllianzSans"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page: <fld:slidenum/>("+$V{PAGE_NUMBER}+") of "]]></textFieldExpression>
 			</textField>
 		</band>
 	</background>

@@ -520,9 +520,9 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		Locale locale = getTextLocale(text);
 		PptxShapeTextHelper textHelper;
 		if (outlineFont(text.getFontName(), locale)) {
-			textHelper = new PptxShapeGlyphHelper(jrctx, text, styledText, getOffsetX(), getOffsetY(), locale, invalidCharReplacement, slide, this);
+			textHelper = new PptxShapeGlyphHelper(jrctx, text, styledText, getOffsetX(), getOffsetY(), locale, invalidCharReplacement, slide, this, pageIndex);
 		} else {
-			textHelper = new PptxShapeRunHelper(jrctx, text, styledText, getOffsetX(), getOffsetY(), locale, invalidCharReplacement, slide, this);
+			textHelper = new PptxShapeRunHelper(jrctx, text, styledText, getOffsetX(), getOffsetY(), locale, invalidCharReplacement, slide, this, pageIndex);
 		}
 		
 		textHelper.export();
@@ -849,6 +849,11 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 						String str1 = jstu.getTruncatedText(jpr1);
 						String str2 = jstu.getTruncatedText(jpr2);
 						if (!str1.equals(str2)) break;
+
+						// Special case - slide number fields in outline fonts
+						// have to be rendered on every page
+						if (str1.contains("<fld:slidenum/>")
+							&& outlineFont(jpr1.getFontName(), getTextLocale(jpr1))) break;
 					}
 					
 					backElem.add(el1);
