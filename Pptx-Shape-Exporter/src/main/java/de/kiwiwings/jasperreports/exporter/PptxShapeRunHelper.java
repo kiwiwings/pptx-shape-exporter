@@ -95,7 +95,7 @@ public class PptxShapeRunHelper extends PptxShapeTextHelper {
 	}
 
 	protected void addField(String type) {
-		textRun = XSLFSimpleShapeHelper.addTextField(textPara, type);
+		textRun = XSLFSimpleShapeHelper.addTextField(textPara, type, locale);
 		textRun.setText(type);
 	}
 	

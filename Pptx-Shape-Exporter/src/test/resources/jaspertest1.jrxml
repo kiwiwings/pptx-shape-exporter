@@ -64,24 +64,58 @@
 				<textFieldExpression><![CDATA["Allianz O"]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement uuid="4ac80f8c-0a07-4bdd-9bc2-ba66535fa910" x="340" y="46" width="30" height="137"/>
+				<reportElement uuid="4ac80f8c-0a07-4bdd-9bc2-ba66535fa910" x="146" y="30" width="30" height="137"/>
 				<textElement rotation="Left">
 					<font size="20"/>
 				</textElement>
 				<text><![CDATA[left sided text]]></text>
 			</staticText>
-			<textField>
-				<reportElement uuid="161f0768-efa9-4629-abb7-05f0975e3766" x="226" y="73" width="100" height="20"/>
-				<textElement/>
-			</textField>
 			<staticText>
-				<reportElement uuid="c2ffdf45-169c-409c-8c4b-44acaaeb0ada" x="146" y="199" width="299" height="112"/>
+				<reportElement uuid="c2ffdf45-169c-409c-8c4b-44acaaeb0ada" x="146" y="272" width="299" height="72"/>
 				<textElement markup="styled">
 					<font fontName="AllianzSans"/>
 				</textElement>
 				<text><![CDATA[This text field element contains styled text displaying the text-only version of the <style size="12" isBold="true" forecolor="black">^<style forecolor="#808080">Jasper</style> <style forecolor="#990000">Reports</style></style> logo and some <font size="10"><sup>superscript</sup></font> text and <font size="10"><sub>subscript</sub></font> text.
 Furthermore I can handle explicit line breaks.]]></text>
 			</staticText>
+			<textField>
+				<reportElement uuid="367e3351-13fa-4006-aa8b-d634622a4ab2" x="200" y="14" width="128" height="200"/>
+				<textElement/>
+				<textFieldExpression><![CDATA["{fld:slidenum}\n"+
+"{fld:datetime1}\n"+
+"{fld:datetime2}\n"+
+"{fld:datetime3}\n"+
+"{fld:datetime4}\n"+
+"{fld:datetime5}\n"+
+"{fld:datetime6}\n"+
+"{fld:datetime7}\n"+
+"{fld:datetime8}\n"+
+"{fld:datetime9}\n"+
+"{fld:datetime10}\n"+
+"{fld:datetime11}\n"+
+"{fld:datetime12}\n"+
+"{fld:datetime13}\n"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="fea9bb94-83e2-4e09-b70e-ce9616131c3f" x="328" y="14" width="143" height="200"/>
+				<textElement>
+					<font fontName="AllianzSans"/>
+				</textElement>
+				<textFieldExpression><![CDATA["{fld:slidenum}\n"+
+"{fld:datetime1}\n"+
+"{fld:datetime2}\n"+
+"{fld:datetime3}\n"+
+"{fld:datetime4}\n"+
+"{fld:datetime5}\n"+
+"{fld:datetime6}\n"+
+"{fld:datetime7}\n"+
+"{fld:datetime8}\n"+
+"{fld:datetime9}\n"+
+"{fld:datetime10}\n"+
+"{fld:datetime11}\n"+
+"{fld:datetime12}\n"+
+"{fld:datetime13}\n"]]></textFieldExpression>
+			</textField>
 		</band>
 	</title>
 	<detail>

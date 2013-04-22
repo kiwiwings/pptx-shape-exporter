@@ -7,8 +7,11 @@ import java.awt.font.TextAttribute;
 import java.awt.geom.Rectangle2D;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedString;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.text.AttributedCharacterIterator.Attribute;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -186,7 +189,27 @@ public class PptxShapeGlyphHelper extends PptxShapeTextHelper {
 				String value = "";
 				if ("slidenum".equals(field)) {
 					value = Integer.toString(slideNum+1);
+				} else if (field.startsWith("datetime")) {
+					DateFormat df;
+					switch (Integer.parseInt(field.replace("datetime", ""))) {
+						default:
+						case  1: df = DateFormat.getDateInstance(DateFormat.MEDIUM, locale); break;
+						case  2: df = DateFormat.getDateInstance(DateFormat.FULL, locale); break;
+						case  3: df = DateFormat.getDateInstance(DateFormat.LONG, locale); break;
+						case  4: df = new SimpleDateFormat("dd MMMM, yyyy", locale); break;
+						case  5: df = new SimpleDateFormat("dd-MMM-yy", locale); break;
+						case  6: df = new SimpleDateFormat("MMMM yy", locale); break;
+						case  7: df = new SimpleDateFormat("MMM-yy", locale); break;
+						case  8: df = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale); break;
+						case  9: df = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM, locale); break;
+						case 10: df = new SimpleDateFormat("HH:mm", locale); break;
+						case 11: df = new SimpleDateFormat("HH:mm:ss", locale); break;
+						case 12: df = DateFormat.getTimeInstance(DateFormat.SHORT, locale); break;
+						case 13: df = DateFormat.getTimeInstance(DateFormat.MEDIUM, locale); break;
+					}
+					value = df.format(new Date());
 				}
+					
 				m.appendReplacement(sb, value);
 			}
 			m.appendTail(sb);
