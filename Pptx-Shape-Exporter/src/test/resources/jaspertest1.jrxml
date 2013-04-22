@@ -91,6 +91,44 @@
 				<text><![CDATA[This text field element contains styled text displaying the text-only version of the <style size="12" isBold="true" forecolor="black">^<style forecolor="#808080">Jasper</style> <style forecolor="#990000">Reports</style></style> logo and some <font size="10"><sup>superscript</sup></font> text and <font size="10"><sub>subscript</sub></font> text.
 Furthermore I can handle explicit line breaks.]]></text>
 			</staticText>
+			<textField>
+				<reportElement uuid="367e3351-13fa-4006-aa8b-d634622a4ab2" x="200" y="14" width="128" height="200"/>
+				<textElement/>
+				<textFieldExpression><![CDATA["{fld:slidenum}\n"+
+"{fld:datetime1}\n"+
+"{fld:datetime2}\n"+
+"{fld:datetime3}\n"+
+"{fld:datetime4}\n"+
+"{fld:datetime5}\n"+
+"{fld:datetime6}\n"+
+"{fld:datetime7}\n"+
+"{fld:datetime8}\n"+
+"{fld:datetime9}\n"+
+"{fld:datetime10}\n"+
+"{fld:datetime11}\n"+
+"{fld:datetime12}\n"+
+"{fld:datetime13}\n"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="fea9bb94-83e2-4e09-b70e-ce9616131c3f" x="328" y="14" width="143" height="200"/>
+				<textElement>
+					<font fontName="AllianzSans"/>
+				</textElement>
+				<textFieldExpression><![CDATA["{fld:slidenum}\n"+
+"{fld:datetime1}\n"+
+"{fld:datetime2}\n"+
+"{fld:datetime3}\n"+
+"{fld:datetime4}\n"+
+"{fld:datetime5}\n"+
+"{fld:datetime6}\n"+
+"{fld:datetime7}\n"+
+"{fld:datetime8}\n"+
+"{fld:datetime9}\n"+
+"{fld:datetime10}\n"+
+"{fld:datetime11}\n"+
+"{fld:datetime12}\n"+
+"{fld:datetime13}\n"]]></textFieldExpression>
+			</textField>
 		</band>
 	</title>
 	<detail>

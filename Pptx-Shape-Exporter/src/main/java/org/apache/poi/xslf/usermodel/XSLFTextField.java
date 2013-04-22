@@ -1,6 +1,7 @@
 package org.apache.poi.xslf.usermodel;
 
 import java.awt.Color;
+import java.util.UUID;
 
 import org.apache.poi.xslf.model.CharacterPropertyFetcher;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTRegularTextRun;
@@ -24,6 +25,7 @@ public class XSLFTextField extends XSLFTextRun {
 	XSLFTextField(CTTextField r, XSLFTextParagraph p) {
 		super(null,p);
 		this._r = r;
+		_r.setId("{"+UUID.randomUUID().toString()+"}");
 	}
 
     public String getText(){
@@ -58,6 +60,14 @@ public class XSLFTextField extends XSLFTextRun {
 
     public void setText(String text){
         _r.setT(text);
+    }
+    
+    public String getId(String id){
+    	return _r.getId();
+    }
+    
+    public void setId(String id){
+    	_r.setId(id);
     }
     
     @Override

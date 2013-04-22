@@ -8,6 +8,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Rectangle2D;
+import java.util.Locale;
 
 import org.apache.poi.util.Units;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTAdjPoint2D;
@@ -187,10 +188,10 @@ public class XSLFSimpleShapeHelper extends XSLFSimpleShape {
 		shape.getNvPr().setName(name);
 	}
 
-	public static XSLFTextField addTextField(XSLFTextParagraph para, String type) {
+	public static XSLFTextField addTextField(XSLFTextParagraph para, String type, Locale locale) {
 		CTTextField fld = para.getXmlObject().addNewFld();
 		CTTextCharacterProperties rPr = fld.addNewRPr();
-		rPr.setLang("en-US");
+		rPr.setLang(locale.toString());
 		fld.setType(type);
 		XSLFTextField txtFld = new XSLFTextField(fld, para);
 		para.getTextRuns().add(txtFld);
