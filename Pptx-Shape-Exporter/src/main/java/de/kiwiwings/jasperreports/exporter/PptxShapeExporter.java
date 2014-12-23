@@ -30,8 +30,6 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.AttributedCharacterIterator.Attribute;
@@ -47,7 +45,7 @@ import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRCommonElement;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -61,6 +59,7 @@ import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.Renderable;
@@ -81,6 +80,8 @@ import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRStyledTextUtil;
+import net.sf.jasperreports.export.ExporterInputItem;
+import net.sf.jasperreports.export.OutputStreamExporterOutput;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
 import org.apache.commons.logging.Log;
@@ -125,29 +126,23 @@ import de.kiwiwings.jasperreports.exporter.customizer.SheetCustomizer;
  * @author Teodor Danciu (teodord@users.sourceforge.net)
  * @version $Id: JRPptxExporter.java 5527 2012-08-01 12:04:08Z shertage $
  */
-public class PptxShapeExporter extends JRAbstractExporter implements FontResolver {
+public class PptxShapeExporter extends JRAbstractExporter<PptxShapeReportConfiguration, PptxShapeExporterConfiguration, OutputStreamExporterOutput, PptxShapeExporterContext> implements FontResolver {
 	private static final Log log = LogFactory.getLog(PptxShapeExporter.class);
-	
+
 	/**
 	 * The exporter key, as used in
-	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
+	 * {@link GenericElementHandlerEnviroment#getElementHandler(JRGenericElementType, String)}.
 	 */
 	public static final String PPTX_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "pptx";
-
-	public static class PptxShapeExportParameter extends JRExporterParameter {
-		protected PptxShapeExportParameter(String name) { super(name); }
-	}
-	
-	public static final JRExporterParameter SHEET_CUSTOMIZER = new PptxShapeExportParameter("sheet customizer");
 	
 	protected static final String PPTX_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.pptx.";
 
+
+	
 	protected XMLSlideShow ppt;
 	protected XSLFSheet slide;
 	protected Map<Integer,XSLFSheet> slideList = new HashMap<Integer,XSLFSheet>();
 	
-	protected JRExportProgressMonitor progressMonitor;
-
 	protected int reportIndex;
 	protected int pageIndex;
 	protected List<Integer> frameIndexStack;
@@ -155,7 +150,11 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	protected boolean startPage;
 	protected String invalidCharReplacement;
 
-	protected SheetCustomizer sheetCustomizer[] = {};
+	protected class ExporterContext extends BaseExporterContext implements PptxShapeExporterContext {
+		public ExporterContext() {
+		}
+	}
+
 	
 	
 	/**
@@ -165,69 +164,47 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		this(DefaultJasperReportsContext.getInstance());
 	}
 
-	
-	/**
-	 *
-	 */
 	public PptxShapeExporter(JasperReportsContext jasperReportsContext)	{
 		super(jasperReportsContext);
+		exporterContext = new ExporterContext();
+	}
+
+	protected Class<PptxShapeExporterConfiguration> getConfigurationInterface() {
+		return PptxShapeExporterConfiguration.class;
 	}
 	
+	protected Class<PptxShapeReportConfiguration> getItemConfigurationInterface() {
+		return PptxShapeReportConfiguration.class;
+	}
 
-	/**
-	 *
-	 */
+	@SuppressWarnings("deprecation")
+	protected void ensureOutput() {
+		if (exporterOutput != null) return;
+		exporterOutput = 
+			new net.sf.jasperreports.export.parameters.ParametersOutputStreamExporterOutput(
+				getJasperReportsContext(),
+				getParameters(),
+				getCurrentJasperPrint()
+			);
+	}
+
+	
+	
 	public void exportReport() throws JRException {
-		progressMonitor = (JRExportProgressMonitor)parameters.get(JRExporterParameter.PROGRESS_MONITOR);
-		if (parameters.containsKey(SHEET_CUSTOMIZER)) {
-			sheetCustomizer = (SheetCustomizer[])parameters.get(SHEET_CUSTOMIZER);
-		}
-		setOffset();
-		setExportContext();
-		setHyperlinkProducerFactory();
-		
-		
-		boolean closeStream = false;
-		OutputStream os = null; 
-		String excStr = "";
-		try	{
-			try {
-				setInput();
-				os = (OutputStream)parameters.get(JRExporterParameter.OUTPUT_STREAM);
-				excStr = "Error trying to export to output stream : " + jasperPrint.getName();
-	
-				if (!parameters.containsKey(JRExporterParameter.FILTER)) {
-					filter = createFilter(getExporterPropertiesPrefix());
-				}
-	
-				if (!isModeBatch) setPageRange();
-	
-				File osFile = null;
-				if (os == null) {
-					osFile = (File)parameters.get(JRExporterParameter.OUTPUT_FILE);
-					
-					if (osFile == null) {
-						String fileName = (String)parameters.get(JRExporterParameter.OUTPUT_FILE_NAME);
-						if (fileName == null) {
-							throw new JRException("No output specified for the exporter.");
-						}
-						osFile = new File(fileName);
-					}
-	
-					excStr = "Error trying to export to file : " + osFile;
-					os = new FileOutputStream(osFile);
-					closeStream = true;
-				}
-				
-				exportReportToStream(os);
-			} finally {
-				resetExportContext();
-				if (closeStream) os.close();	
-			}
-		} catch (InvalidFormatException e) {
-			throw new JRException(excStr, e);
+		ensureJasperReportsContext();
+		ensureInput();
+		initExport();
+		ensureOutput();
+
+		OutputStream outputStream = getExporterOutput().getOutputStream();
+
+		try {
+			exportReportToStream(outputStream);
 		} catch (IOException e) {
-			throw new JRException(excStr, e);
+			throw new JRRuntimeException(e);
+		} finally {
+			getExporterOutput().close();
+			resetExportContext();
 		}
 	}
 
@@ -235,32 +212,34 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	/**
 	 *
 	 */
-	protected void exportReportToStream(OutputStream os) throws JRException, IOException, InvalidFormatException {
+	protected void exportReportToStream(OutputStream os) throws JRException, IOException {
 		ppt = new XMLSlideShow();
 
 		ppt.setPageSize(new Dimension(jasperPrint.getPageWidth(), jasperPrint.getPageHeight()));
 
 		int nbrBackElem = exportBackground();
+
+		List<ExporterInputItem> items = exporterInput.getItems();
 		
-		for(reportIndex = 0; reportIndex < jasperPrintList.size(); reportIndex++) {
-			setJasperPrint(jasperPrintList.get(reportIndex));
+		for(reportIndex = 0; reportIndex < items.size(); reportIndex++) {
+			ExporterInputItem item = items.get(reportIndex);
+			
+			setCurrentExporterInputItem(item);
 			setExporterHints();
 			slideList.clear();
 
 			List<JRPrintPage> pages = jasperPrint.getPages();
 			if (pages == null || pages.size() == 0) continue;
 			
-			if (isModeBatch) {
-				startPageIndex = 0;
-				endPageIndex = pages.size() - 1;
-			}
-
+			PageRange pageRange = getPageRange();
+			int startPageIndex = (pageRange == null || pageRange.getStartPageIndex() == null) ? 0 : pageRange.getStartPageIndex();
+			int endPageIndex = (pageRange == null || pageRange.getEndPageIndex() == null) ? (pages.size() - 1) : pageRange.getEndPageIndex();
+			
 			// pre-create pages for hyperlinks between them
 			for (int i=startPageIndex; i <= endPageIndex; i++) {
 				createSlide(null);//FIXMEPPTX
 				slideList.put(i,slide);
 			}
-			
 			
 			JRPrintPage page = null;
 			for(pageIndex = startPageIndex; pageIndex <= endPageIndex; pageIndex++) {
@@ -277,8 +256,11 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 				
 				exportPage(page);
 				
-				for (SheetCustomizer sc : sheetCustomizer) {
-					sc.customize(slide);
+				SheetCustomizer sheetCustomizer[] = itemConfiguration.getSheetCustomizer();
+				if (sheetCustomizer != null) {
+					for (SheetCustomizer sc : sheetCustomizer) {
+						sc.customize(slide);
+					}
 				}
 			}
 		}
@@ -297,6 +279,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 
 		exportElements(page.getElements());
 		
+		JRExportProgressMonitor progressMonitor = getCurrentItemConfiguration().getProgressMonitor();
 		if (progressMonitor != null) {
 			progressMonitor.afterPageExport();
 		}
@@ -723,14 +706,14 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 	/**
 	 *
 	 */
-	protected String getExporterPropertiesPrefix() { //FIXMEPPTX move this to abstract exporter
+	public String getExporterPropertiesPrefix() { //FIXMEPPTX move this to abstract exporter
 		return PPTX_EXPORTER_PROPERTIES_PREFIX;
 	}
 
 	/**
 	 *
 	 */
-	protected String getExporterKey() {
+	public String getExporterKey() {
 		return PPTX_EXPORTER_KEY;
 	}
 
@@ -743,7 +726,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 		}
 	}
 	
-	protected void embedFonts() throws JRException, IOException, InvalidFormatException {
+	protected void embedFonts() throws JRException, IOException {
 		RepositoryUtil ru = RepositoryUtil.getInstance(jasperReportsContext);
 		
 		List<FontFamily> ferList = jasperReportsContext.getExtensions(FontFamily.class);
@@ -769,7 +752,7 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 			
 			for (int i=0; i<4; i++) {
 				if (ffTypes[i] == null) continue;
-				String fileRelPath = ffTypes[i].getFile();
+				String fileRelPath = ffTypes[i].getTtf();
 				String fntDataName = fileRelPath.replaceAll(".*/(.*).ttf", "$1.fntdata");
 				byte fontBytes[] = ru.getBytesFromLocation(fileRelPath);
 				
@@ -778,7 +761,12 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 				
 				WritableFontData eotFont = conv.convert(fonts[0]);
 
-				PackagePartName partName = PackagingURIHelper.createPartName("/ppt/fonts/"+fntDataName);
+				PackagePartName partName;
+				try {
+					partName = PackagingURIHelper.createPartName("/ppt/fonts/"+fntDataName);
+				} catch (InvalidFormatException e) {
+					throw new IOException(e);
+				}
 				PackagePart part = ppt.getPackage().createPart(partName, "application/x-fontdata");
 				OutputStream partOs = part.getOutputStream();
 				eotFont.copyTo(partOs);
@@ -817,12 +805,13 @@ public class PptxShapeExporter extends JRAbstractExporter implements FontResolve
 
 
 	protected int exportBackground() throws JRException {
-		if (jasperPrintList == null || jasperPrintList.size() == 0) {
+		List<ExporterInputItem> items = exporterInput.getItems();
+		if (items == null || items.size() == 0) {
 			return 0;
 		}
-
-		setJasperPrint(jasperPrintList.get(0));
 		
+		setCurrentExporterInputItem(items.get(0));
+	
 		List<JRPrintPage> pages = jasperPrint.getPages();
 		List<JRPrintElement> backElem = new ArrayList<JRPrintElement>();
 		if (pages.size() >= 2) {

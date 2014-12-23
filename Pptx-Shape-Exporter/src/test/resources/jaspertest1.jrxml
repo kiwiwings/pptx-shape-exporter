@@ -3,18 +3,12 @@
 	<property name="ireport.zoom" value="1.0"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="2014"/>
-	<subDataset name="ds" uuid="a2fef776-ef6d-4e8d-8f88-bbe201a5b150">
-		<queryString>
-			<![CDATA[select top 10 * from [NPS$]]]>
-		</queryString>
-		<field name="IND_ID" class="java.lang.Integer"/>
-		<field name="JAHR" class="java.lang.String"/>
-		<field name="MONAT" class="java.lang.String"/>
-		<field name="NPS" class="java.lang.Double"/>
-	</subDataset>
 	<queryString>
-		<![CDATA[select top 1 * from [NPS$]]]>
+		<![CDATA[]]>
 	</queryString>
+    <field name="CATEGORY" class="java.lang.String"/>
+    <field name="SERIES" class="java.lang.String"/>
+    <field name="VALUE" class="java.lang.Integer"/>
 	<background>
 		<band height="500" splitType="Stretch">
 			<staticText>
@@ -141,13 +135,10 @@ Furthermore I can handle explicit line breaks.]]></text>
 					<chartLegend/>
 				</chart>
 				<categoryDataset>
-					<dataset>
-						<datasetRun subDataset="ds" uuid="51c7f1c4-d056-47bc-8706-2facf5337121"/>
-					</dataset>
 					<categorySeries>
-						<seriesExpression><![CDATA["NPS"]]></seriesExpression>
-						<categoryExpression><![CDATA[""+$F{IND_ID}]]></categoryExpression>
-						<valueExpression><![CDATA[$F{NPS}]]></valueExpression>
+						<seriesExpression><![CDATA[$F{SERIES}]]></seriesExpression>
+						<categoryExpression><![CDATA[$F{CATEGORY}]]></categoryExpression>
+						<valueExpression><![CDATA[$F{VALUE}]]></valueExpression>
 					</categorySeries>
 				</categoryDataset>
 				<barPlot>
@@ -166,12 +157,9 @@ Furthermore I can handle explicit line breaks.]]></text>
 					<chartLegend/>
 				</chart>
 				<pieDataset>
-					<dataset>
-						<datasetRun subDataset="ds" uuid="4b878845-2b6c-45ff-9a58-158b34b3e8cd"/>
-					</dataset>
-					<keyExpression><![CDATA[""+$F{IND_ID}]]></keyExpression>
-					<valueExpression><![CDATA[$F{NPS}]]></valueExpression>
-					<labelExpression><![CDATA[""+$F{IND_ID}]]></labelExpression>
+                    <keyExpression><![CDATA[$F{SERIES}]]></keyExpression>
+                    <valueExpression><![CDATA[$F{VALUE}]]></valueExpression>
+                    <labelExpression><![CDATA[$F{CATEGORY}]]></labelExpression>
 				</pieDataset>
 				<pie3DPlot>
 					<plot/>
@@ -188,13 +176,10 @@ Furthermore I can handle explicit line breaks.]]></text>
 					<chartLegend/>
 				</chart>
 				<categoryDataset>
-					<dataset>
-						<datasetRun subDataset="ds" uuid="c8d37d61-fb64-4b60-9a29-80a09f7ada35"/>
-					</dataset>
 					<categorySeries>
-						<seriesExpression><![CDATA["NPS"]]></seriesExpression>
-						<categoryExpression><![CDATA[""+$F{IND_ID}]]></categoryExpression>
-						<valueExpression><![CDATA[$F{NPS}]]></valueExpression>
+						<seriesExpression><![CDATA[$F{SERIES}]]></seriesExpression>
+						<categoryExpression><![CDATA[$F{CATEGORY}]]></categoryExpression>
+						<valueExpression><![CDATA[$F{VALUE}]]></valueExpression>
 					</categorySeries>
 				</categoryDataset>
 				<bar3DPlot>

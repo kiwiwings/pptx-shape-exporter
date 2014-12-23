@@ -3,17 +3,19 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.kiwiwings.jasperreports.exporter</groupId>
 	<artifactId>pptx-shape-exporter</artifactId>
-	<version>5.0.1</version>
+	<version>5.6.1</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-	
+
 	<repositories>
 		<repository>
 			<id>sfntly-repo</id>
 			<url>file://${basedir}/sfntly-repo</url>
-			<releases><enabled>true</enabled></releases>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
 		</repository>
 	</repositories>
 
@@ -21,23 +23,52 @@
 		<dependency>
 			<groupId>net.sf.jasperreports</groupId>
 			<artifactId>jasperreports</artifactId>
-			<version>5.0.1</version>
+			<version>5.6.1</version>
 			<exclusions>
 				<exclusion>
-					<groupId>bouncycastle</groupId>
-					<artifactId>bcmail-jdk14</artifactId>
+				    <artifactId>itext</artifactId>
+				    <groupId>com.lowagie</groupId>
 				</exclusion>
 				<exclusion>
-					<groupId>bouncycastle</groupId>
-					<artifactId>bcprov-jdk14</artifactId>
+				    <artifactId>jackson-core</artifactId>
+				    <groupId>com.fasterxml.jackson.core</groupId>
+				</exclusion>
+				<exclusion>
+				    <artifactId>jackson-databind</artifactId>
+				    <groupId>com.fasterxml.jackson.core</groupId>
+				</exclusion>
+				<exclusion>
+				    <artifactId>jackson-annotations</artifactId>
+				    <groupId>com.fasterxml.jackson.core</groupId>
+				</exclusion>
+				<exclusion>
+				    <artifactId>lucene-core</artifactId>
+				    <groupId>org.apache.lucene</groupId>
+				</exclusion>
+				<exclusion>
+				    <artifactId>lucene-analyzers-common</artifactId>
+				    <groupId>org.apache.lucene</groupId>
+				</exclusion>
+				<exclusion>
+				    <artifactId>lucene-queryparser</artifactId>
+				    <groupId>org.apache.lucene</groupId>
+				</exclusion>
+				<exclusion>
+				    <artifactId>olap4j</artifactId>
+				    <groupId>org.olap4j</groupId>
 				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>3.9</version>
+			<version>3.11</version>
 		</dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+            <version>3.11</version>
+        </dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
@@ -63,11 +94,6 @@
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
-			<dependency>
-				<groupId>org.apache.xmlbeans</groupId>
-				<artifactId>xmlbeans</artifactId>
-				<version>2.6.0</version>
-			</dependency>
 			<dependency>
 				<groupId>xml-apis</groupId>
 				<artifactId>xml-apis</artifactId>
