@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="example" pageWidth="500" pageHeight="500" columnWidth="500" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="87f10a83-fccc-4803-a919-529e3f295df2">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="837"/>
+	<field name="SERIES" class="java.lang.String"/>
+	<field name="CATEGORY" class="java.lang.String"/>
+	<field name="VALUE" class="java.lang.Integer"/>
+	<sortField name="SERIES"/>
+	<sortField name="CATEGORY"/>
+	<group name="report" keepTogether="true">
+		<groupExpression><![CDATA["1"]]></groupExpression>
+		<groupHeader>
+			<band height="500">
+				<rectangle radius="0">
+					<reportElement x="0" y="0" width="500" height="500" uuid="c3f48476-4ebf-45ff-b270-e87a83905593"/>
+				</rectangle>
+				<image scaleImage="Clip" hAlign="Center" hyperlinkType="Reference">
+					<reportElement x="60" y="364" width="355" height="106" uuid="755c1da0-6347-4702-b553-be4b0883dd98"/>
+					<graphicElement>
+						<pen lineWidth="0.75" lineStyle="Dashed" lineColor="#FF00FF"/>
+					</graphicElement>
+					<imageExpression><![CDATA["E:\\project\\git\\pptx-shape-exporter\\Pptx-Shape-Exporter\\src\\test\\resources\\dilbert-2011-09-28-powerpoint.gif"]]></imageExpression>
+					<hyperlinkReferenceExpression><![CDATA["http://dict.leo.org"]]></hyperlinkReferenceExpression>
+				</image>
+				<textField>
+					<reportElement x="43" y="14" width="73" height="282" forecolor="#003680" uuid="c454b2b0-b636-4a1d-966a-93bb97ae03fe"/>
+					<box>
+						<pen lineStyle="Dashed"/>
+						<topPen lineWidth="1.0" lineStyle="Dashed"/>
+						<leftPen lineWidth="0.0" lineStyle="Dashed"/>
+						<bottomPen lineWidth="1.0" lineStyle="Dashed"/>
+						<rightPen lineWidth="1.0" lineStyle="Dashed"/>
+					</box>
+					<textElement rotation="Left">
+						<font fontName="Allianz-Positiv" size="54"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Allianz O"]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="146" y="14" width="30" height="137" uuid="0a4d16b5-cb0a-4dc4-af40-4004167b074c"/>
+					<textElement rotation="Left">
+						<font size="20"/>
+					</textElement>
+					<text><![CDATA[left sided text]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="146" y="199" width="299" height="112" uuid="dd4a52b6-6be5-4ef5-ba2c-c037ef75be72"/>
+					<textElement markup="styled">
+						<font fontName="AllianzSans"/>
+					</textElement>
+					<text><![CDATA[This text field element contains styled text displaying the text-only version of the <style size="12" isBold="true" forecolor="black">^<style forecolor="#808080">Jasper</style> <style forecolor="#990000">Reports</style></style> logo and some <font size="10"><sup>superscript</sup></font> text and <font size="10"><sub>subscript</sub></font> text.
+Furthermore I can handle explicit line breaks.]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="200" y="14" width="128" height="200" uuid="3ae354de-410e-4dc0-b4f0-17c5375f3748"/>
+					<textFieldExpression><![CDATA["{fld:slidenum}\n"+
+"{fld:datetime1}\n"+
+"{fld:datetime2}\n"+
+"{fld:datetime3}\n"+
+"{fld:datetime4}\n"+
+"{fld:datetime5}\n"+
+"{fld:datetime6}\n"+
+"{fld:datetime7}\n"+
+"{fld:datetime8}\n"+
+"{fld:datetime9}\n"+
+"{fld:datetime10}\n"+
+"{fld:datetime11}\n"+
+"{fld:datetime12}\n"+
+"{fld:datetime13}\n"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="328" y="14" width="143" height="200" uuid="87b5b368-dbe2-42bd-9d14-b043d18445ae"/>
+					<textElement>
+						<font fontName="AllianzSans"/>
+					</textElement>
+					<textFieldExpression><![CDATA["{fld:slidenum}\n"+
+"{fld:datetime1}\n"+
+"{fld:datetime2}\n"+
+"{fld:datetime3}\n"+
+"{fld:datetime4}\n"+
+"{fld:datetime5}\n"+
+"{fld:datetime6}\n"+
+"{fld:datetime7}\n"+
+"{fld:datetime8}\n"+
+"{fld:datetime9}\n"+
+"{fld:datetime10}\n"+
+"{fld:datetime11}\n"+
+"{fld:datetime12}\n"+
+"{fld:datetime13}\n"]]></textFieldExpression>
+				</textField>
+			</band>
+			<band height="500">
+				<barChart>
+					<chart evaluationTime="Report">
+						<reportElement x="0" y="0" width="500" height="450" uuid="2d842884-2ce2-43d5-a6e0-38d796efae6d"/>
+						<chartTitle/>
+						<chartSubtitle/>
+						<chartLegend/>
+					</chart>
+					<categoryDataset>
+						<categorySeries>
+							<seriesExpression><![CDATA[$F{SERIES}]]></seriesExpression>
+							<categoryExpression><![CDATA[$F{CATEGORY}]]></categoryExpression>
+							<valueExpression><![CDATA[$F{VALUE}]]></valueExpression>
+						</categorySeries>
+					</categoryDataset>
+					<barPlot>
+						<plot/>
+						<itemLabel/>
+						<categoryAxisFormat>
+							<axisFormat/>
+						</categoryAxisFormat>
+						<valueAxisFormat>
+							<axisFormat/>
+						</valueAxisFormat>
+					</barPlot>
+				</barChart>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="500">
+				<stackedBar3DChart>
+					<chart evaluationTime="Report">
+						<reportElement x="0" y="0" width="500" height="450" uuid="4575338b-c5e4-4b3f-925e-5ddf137a7361"/>
+						<chartTitle/>
+						<chartSubtitle/>
+						<chartLegend/>
+					</chart>
+					<categoryDataset>
+						<categorySeries>
+							<seriesExpression><![CDATA[$F{SERIES}]]></seriesExpression>
+							<categoryExpression><![CDATA[$F{CATEGORY}]]></categoryExpression>
+							<valueExpression><![CDATA[$F{VALUE}]]></valueExpression>
+						</categorySeries>
+					</categoryDataset>
+					<bar3DPlot>
+						<plot/>
+						<itemLabel/>
+						<categoryAxisFormat>
+							<axisFormat/>
+						</categoryAxisFormat>
+						<valueAxisFormat>
+							<axisFormat/>
+						</valueAxisFormat>
+					</bar3DPlot>
+				</stackedBar3DChart>
+			</band>
+		</groupFooter>
+	</group>
+	<group name="seriesGroup" keepTogether="true">
+		<groupExpression><![CDATA[$F{SERIES}]]></groupExpression>
+		<groupHeader>
+			<band height="500">
+				<pie3DChart>
+					<chart evaluationTime="Group" evaluationGroup="seriesGroup">
+						<reportElement x="0" y="0" width="500" height="350" uuid="da7fb095-85cc-4a24-99af-6c31bf12eaec"/>
+						<chartTitle position="Bottom">
+							<titleExpression><![CDATA[$F{SERIES}]]></titleExpression>
+						</chartTitle>
+						<chartSubtitle/>
+						<chartLegend/>
+					</chart>
+					<pieDataset>
+						<dataset resetType="Group" resetGroup="seriesGroup"/>
+						<keyExpression><![CDATA[$F{CATEGORY}]]></keyExpression>
+						<valueExpression><![CDATA[$F{VALUE}]]></valueExpression>
+					</pieDataset>
+					<pie3DPlot depthFactor="0.5" isCircular="false">
+						<plot/>
+						<itemLabel/>
+					</pie3DPlot>
+				</pie3DChart>
+			</band>
+		</groupHeader>
+	</group>
+	<background>
+		<band height="500">
+			<staticText>
+				<reportElement x="360" y="460" width="140" height="39" forecolor="#003399" uuid="379fb772-1cda-4ddd-844f-35a588504633"/>
+				<textElement>
+					<font fontName="Allianz-Positiv" size="32"/>
+				</textElement>
+				<text><![CDATA[Allianz O]]></text>
+			</staticText>
+			<textField evaluationTime="Report">
+				<reportElement x="116" y="479" width="100" height="20" uuid="07db554c-8e68-4cc7-93f3-b12bfba0a840"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="0" y="460" width="116" height="20" uuid="9b403ab2-02de-414c-a87b-74b9641d8596"/>
+				<textElement markup="styled">
+					<font fontName="SansSerif"/>
+				</textElement>
+				<textFieldExpression><![CDATA["<i>Page</i>: <style isUnderline=\"true\">{fld:slidenum}</style><b> of </b>"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="0" y="479" width="116" height="20" uuid="1059e6d1-3d5f-41de-8551-1eba228bbca6"/>
+				<textElement>
+					<font fontName="AllianzSans"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page: {fld:slidenum}("+$V{PAGE_NUMBER}+") of "]]></textFieldExpression>
+			</textField>
+		</band>
+	</background>
+</jasperReport>
