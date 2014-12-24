@@ -217,7 +217,10 @@ public class PptxShapeExporter extends JRAbstractExporter<PptxShapeReportConfigu
 
 		ppt.setPageSize(new Dimension(jasperPrint.getPageWidth(), jasperPrint.getPageHeight()));
 
-		int nbrBackElem = exportBackground();
+		int nbrBackElem = 0;
+		if (itemConfiguration.hasBackground()) {
+			nbrBackElem = exportBackground();
+		}
 
 		List<ExporterInputItem> items = exporterInput.getItems();
 		

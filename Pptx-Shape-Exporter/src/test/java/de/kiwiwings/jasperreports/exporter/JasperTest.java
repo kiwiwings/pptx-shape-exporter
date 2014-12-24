@@ -23,9 +23,10 @@ public class JasperTest {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
 		File csvFile = new File("src/test/resources/example.csv");
-		File jrxmlFile = new File("src/test/resources/jaspertest1.jrxml");
+		File jrxmlFile = new File("src/test/resources/example.jrxml");
 
 		JRCsvDataSource dataSource = new JRCsvDataSource(csvFile);
+		dataSource.setRecordDelimiter("\r\n");
 		dataSource.setFieldDelimiter('\t');
 		dataSource.setUseFirstRowAsHeader(true);
 		
@@ -38,8 +39,9 @@ public class JasperTest {
 
 		PptxShapeExporter exporter = new PptxShapeExporter();
 		SimplePptxShapeReportConfiguration configuration = new SimplePptxShapeReportConfiguration();
-		configuration.setSheetCustomizer(
-			new SheetCustomizer[]{ new ChartTextLifter(), new ChartFakeProtect(), new ChartGlassPane() });
+		configuration.setHasBackground(jrep.getBackground() != null);
+//		configuration.setSheetCustomizer(
+//			new SheetCustomizer[]{ new ChartTextLifter(), new ChartFakeProtect(), new ChartGlassPane() });
 		
 		exporter.setConfiguration(configuration);
 		exporter.setExporterInput(new SimpleExporterInput(jprint));

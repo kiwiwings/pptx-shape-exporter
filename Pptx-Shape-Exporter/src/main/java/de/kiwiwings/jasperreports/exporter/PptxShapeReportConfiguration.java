@@ -13,6 +13,11 @@ public interface PptxShapeReportConfiguration extends PptxReportConfiguration {
 	public static final String PROPERTY_SHEET_CUSTOMIZER = JRPropertiesUtil.PROPERTY_PREFIX +  "export.pptx." + "sheet_customizer";
 	
 	/**
+	 * Flag if a background band is in the Report
+	 */
+	public static final String PROPERTY_HAS_BACKGROUND = JRPropertiesUtil.PROPERTY_PREFIX +  "export.pptx." + "background";
+	
+	/**
 	 * @see #PROPERTY_SHEET_CUSTOMIZER
 	 */
 	@ExporterProperty(
@@ -21,4 +26,14 @@ public interface PptxShapeReportConfiguration extends PptxReportConfiguration {
 	)
 	public SheetCustomizer[] getSheetCustomizer();
 	
+
+	/**
+	 * @see #PROPERTY_HAS_BACKGROUND
+	 */
+	@ExporterProperty(
+		value=PROPERTY_HAS_BACKGROUND, 
+		booleanDefault=true,
+		intDefault=0
+	)
+	public boolean hasBackground();
 }

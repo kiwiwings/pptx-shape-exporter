@@ -25,9 +25,12 @@ import java.awt.font.TextAttribute;
 import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
+import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Line2D;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
@@ -66,6 +69,7 @@ import org.apache.poi.xslf.usermodel.XSLFTextBox;
 import org.apache.poi.xslf.usermodel.XSLFTextParagraph;
 import org.apache.poi.xslf.usermodel.XSLFTextRun;
 import org.apache.xmlbeans.XmlOptions;
+import org.jfree.util.ShapeUtilities;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTGeomGuide;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTGeomGuideList;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTShape;
@@ -95,6 +99,8 @@ public class PptxGraphics2D extends Graphics2D {
 	// Locale for text rendering
 	protected Locale locale = null;
 
+	protected Area userClip = null;
+	
 	public PptxGraphics2D(Rectangle2D anchor, FontResolver fontResolver) {
 		pptx = new XMLSlideShow();
 		xslide = pptx.createSlide();
@@ -577,6 +583,16 @@ public class PptxGraphics2D extends Graphics2D {
 	 */
 	public void clip(Shape s) {
 		log.log(POILogger.WARN, "Not implemented");
+		if (s == null) return;
+
+		Shape ts = _transform.createTransformedShape(s);
+		if (ts == null) return;
+		
+		if (userClip == null) {
+			userClip = new Area(ts);
+		} else {
+			userClip.intersect(new Area(ts));
+		}
 	}
 
 	/**
@@ -596,7 +612,13 @@ public class PptxGraphics2D extends Graphics2D {
 	 */
 	public Shape getClip() {
 		log.log(POILogger.WARN, "Not implemented");
-		return null;
+		if (userClip == null) return null;
+		try {
+			return new Area(_transform.createInverse().createTransformedShape(userClip));
+		} catch (NoninvertibleTransformException e) {
+			log.log(POILogger.WARN, "Transform can't be inverted", e);
+			return null;
+		}
 	}
 
 	/**
@@ -1315,6 +1337,13 @@ public class PptxGraphics2D extends Graphics2D {
 	 */
 	public void setClip(Shape clip) {
 		log.log(POILogger.WARN, "Not implemented");
+		if (clip == null) {
+			userClip = null;
+			return;
+		}
+		
+		Shape ts = _transform.createTransformedShape(clip);
+		userClip = (ts != null) ? new Area(ts) : null;
 	}
 
 	/**
@@ -2078,7 +2107,9 @@ public class PptxGraphics2D extends Graphics2D {
 	}
 
 	void getShape(Shape shape, XSLFSimpleShape xss[], boolean newShape[]) {
-		boolean isIdent = _transform.isIdentity();
+		boolean isIdent = _transform.isIdentity()
+			&& (userClip == null || userClip.contains(shape.getBounds2D()));
+		
 		if (shape instanceof Serializable && !(shape instanceof Polygon)) {
 			Serializable s = (Serializable)shape;
 			shape = (Shape)SerializationUtils.clone(s);
@@ -2094,9 +2125,14 @@ public class PptxGraphics2D extends Graphics2D {
 		} else if (isIdent && shape instanceof Rectangle2D) {
 			xss[0] = getShape((Rectangle2D) shape);
 		} else {
-//			System.out.println(origShape.getClass().getCanonicalName());
-			GeneralPath path = new GeneralPath(_transform.createTransformedShape(shape));
 			XSLFFreeformShape p = _group.createFreeform();
+			Shape ts = _transform.createTransformedShape(shape);
+			if (userClip != null && !(shape instanceof Path2D || shape instanceof Line2D)) {
+				Area tsa = new Area(ts);
+				tsa.intersect(userClip);
+				ts = tsa;
+			}
+			GeneralPath path = new GeneralPath(ts);
 			XSLFSimpleShapeHelper.setPath(p, path);
 			XSLFSimpleShapeHelper.fixBounds(p);
 			xss[0] = p;
@@ -2126,8 +2162,8 @@ public class PptxGraphics2D extends Graphics2D {
 
 		p.setAnchor(new Rectangle2D.Double(arc.getX(), arc.getY(), arc.getWidth(), arc.getHeight()));
 
-		int startG = convertJava2OoxmlAngle(arc.getAngleStart(), arc.getHeight(), arc.getWidth());
-		int endG = convertJava2OoxmlAngle(arc.getAngleStart() + arc.getAngleExtent(), arc.getHeight(), arc.getWidth());
+		int startG = convertJava2OoxmlAngle(arc.getAngleStart(), 0, arc.getHeight(), arc.getWidth());
+		int endG = convertJava2OoxmlAngle(arc.getAngleStart(), arc.getAngleExtent(), arc.getHeight(), arc.getWidth());
 		
 		CTShape cshape = (CTShape) p.getXmlObject();
 		CTGeomGuideList avLst = cshape.getSpPr().getPrstGeom().getAvLst();
@@ -2140,25 +2176,40 @@ public class PptxGraphics2D extends Graphics2D {
 		return p;
 	}
 
-	// Arc2D angles are skewed, OOXML aren't ... so we need to unskew them
-	// http://www.onlinemathe.de/forum/Problem-bei-Winkelberechnungen-einer-Ellipse
-	// a = height/width of bounding box
-	// angle_ooxml = ATAN(a * TAN(angle_arc2d))
-	// Furthermore ooxml angle starts at the X-axis and increases clock-wise,
-	// where as Arc2D api states
-	// "45 degrees always falls on the line from the center of the ellipse to the upper right corner of the framing rectangle"
-	// so we need to reverse it
-	// Furthermore ooxml angle is degree * 60000
-	int convertJava2OoxmlAngle(double angle, double height, double width) {
+	/**
+	 * Arc2D angles are skewed, OOXML aren't ... so we need to unskew them
+	 * 
+	 * a = height/width of bounding box
+	 * angle_ooxml = ATAN(a * TAN(angle_arc2d))
+	 * 
+	 * Furthermore ooxml angle starts at the X-axis and increases clock-wise,
+	 * where as Arc2D api states
+	 * "45 degrees always falls on the line from the center of the ellipse to the upper right corner of the framing rectangle"
+	 * so we need to reverse it
+	 * 
+	 * AWT:                      OOXML:
+	 *         |90                       |270 (16200000)
+	 *         |                         |
+	 * 180-----------0           180-----------0 
+	 *         |              (10800000) |
+	 *         |270                      |90 (5400000)
+	 * 
+	 * Furthermore ooxml angle is degree * 60000
+	 *
+	 * @see <a href="http://www.onlinemathe.de/forum/Problem-bei-Winkelberechnungen-einer-Ellipse>unskew angle</a>
+	 **/
+	int convertJava2OoxmlAngle(double angle, double extend, double height, double width) {
 		double aspect = (height / width);
 		// normalize angle, in case it's < 0 or > 360 degrees
-		angle = (360d+angle)%360d;
-		double cor = (90 < angle && angle < 270) ? 180 : 0;
+		double awtAngle = angle + extend;
+		awtAngle = (10*360d+awtAngle)%360d;
+		double cor = (90 < awtAngle && awtAngle <= 270) ? 180 : 0;
 		// unskew
-		angle = Math.toDegrees(Math.atan(aspect * Math.tan(Math.toRadians(angle))));
+		double ooAngle = Math.toDegrees(Math.atan(aspect * Math.tan(Math.toRadians(awtAngle))));
 		// reverse angle for ooxml
-		angle = (360d+angle+cor)%360d;
-		return (int)((360 - angle) * 60000);
+		ooAngle = (360d+ooAngle+cor)%360d;
+		ooAngle = (360 - ooAngle) * 60000;
+		return (int)(ooAngle);
 	}
 
 	public XSLFAutoShape getShape(Line2D line) {
