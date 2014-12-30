@@ -69,7 +69,6 @@ import org.apache.poi.xslf.usermodel.XSLFTextBox;
 import org.apache.poi.xslf.usermodel.XSLFTextParagraph;
 import org.apache.poi.xslf.usermodel.XSLFTextRun;
 import org.apache.xmlbeans.XmlOptions;
-import org.jfree.util.ShapeUtilities;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTGeomGuide;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTGeomGuideList;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTShape;
@@ -436,6 +435,7 @@ public class PptxGraphics2D extends Graphics2D {
 	 * @see #setClip
 	 */
 	public void drawString(String s, float x, float y) {
+		if (s == null || "".equals(s)) return;
 		if (fontResolver.outlineFont(getFont().getFamily(), null)) {
 			// the outline will be transformed by the fill method
 			FontRenderContext frc = getFontRenderContext();
